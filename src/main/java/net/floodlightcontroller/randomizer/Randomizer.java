@@ -19,6 +19,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -48,7 +49,7 @@ public class Randomizer implements IOFMessageListener, IFloodlightModule {
     }
 
     private IPv6Address generateRandomIPv6Address() {
-        return null;
+        return IPv6Address.of(new Random().nextLong(), new Random().nextLong());
     }
 
     //================================================================================
@@ -119,6 +120,7 @@ public class Randomizer implements IOFMessageListener, IFloodlightModule {
             @Override
             public void run() {
                 log.info("{}", generateRandomIPv4Address());
+                log.info("{}", generateRandomIPv6Address());
             }
         }, 0L, 5L, TimeUnit.SECONDS);
     }
