@@ -16,10 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -34,11 +31,15 @@ public class Randomizer implements IOFMessageListener, IFloodlightModule {
     private ScheduledExecutorService executorService;
     private IFloodlightProviderService floodlightProvider;
     private static Logger log;
+
+    private List<IPv4Address> whiteListedHostsIPv4;
+    private List<IPv6Address> whiteListedHostsIPv6;
     //endregion
     //================================================================================
 
 
     //================================================================================
+    //region Helper Functions
     private void insertInboundFlows() {};
 
     private void insertOutboundFlows() {};
@@ -52,6 +53,15 @@ public class Randomizer implements IOFMessageListener, IFloodlightModule {
         return IPv6Address.of(new Random().nextLong(), new Random().nextLong());
     }
 
+    private void startTest() {
+        executorService.scheduleAtFixedRate((Runnable) () -> {
+            log.info("{}", generateRandomIPv4Address());
+            log.info("{}", generateRandomIPv6Address());
+        }, 0L, 5L, TimeUnit.SECONDS);
+
+        whiteListedHostsIPv4.add(IPv4Address.of(10, 0, 0, 2));
+    }
+    //endregion
     //================================================================================
 
 
@@ -109,20 +119,16 @@ public class Randomizer implements IOFMessageListener, IFloodlightModule {
         executorService = Executors.newSingleThreadScheduledExecutor();
         floodlightProvider = context.getServiceImpl(IFloodlightProviderService.class);
         log = LoggerFactory.getLogger(Randomizer.class);
+
+        whiteListedHostsIPv4 = new ArrayList<>();
+        whiteListedHostsIPv6 = new ArrayList<>();
     }
 
     @Override
     public void startUp(FloodlightModuleContext context) throws FloodlightModuleException {
         floodlightProvider.addOFMessageListener(OFType.PACKET_IN, this);
 
-        // Generate random IP addresses, strictly for test purposes
-        executorService.scheduleAtFixedRate(new Runnable() {
-            @Override
-            public void run() {
-                log.info("{}", generateRandomIPv4Address());
-                log.info("{}", generateRandomIPv6Address());
-            }
-        }, 0L, 5L, TimeUnit.SECONDS);
+        startTest();
     }
     //endregion
     //================================================================================
