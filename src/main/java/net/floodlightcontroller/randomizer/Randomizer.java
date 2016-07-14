@@ -8,8 +8,12 @@ import net.floodlightcontroller.core.module.FloodlightModuleContext;
 import net.floodlightcontroller.core.module.FloodlightModuleException;
 import net.floodlightcontroller.core.module.IFloodlightModule;
 import net.floodlightcontroller.core.module.IFloodlightService;
+import net.floodlightcontroller.packet.Ethernet;
+import net.floodlightcontroller.packet.IPv4;
 import org.projectfloodlight.openflow.protocol.OFMessage;
+import org.projectfloodlight.openflow.protocol.OFPacketIn;
 import org.projectfloodlight.openflow.protocol.OFType;
+import org.projectfloodlight.openflow.types.EthType;
 import org.projectfloodlight.openflow.types.IPv4Address;
 import org.projectfloodlight.openflow.types.IPv6Address;
 import org.slf4j.Logger;
@@ -69,7 +73,17 @@ public class Randomizer implements IOFMessageListener, IFloodlightModule {
     //region IOFMessageListener Implementation
     @Override
     public Command receive(IOFSwitch sw, OFMessage msg, FloodlightContext cntx) {
-        return null;
+        OFPacketIn pi = (OFPacketIn) msg;
+        Ethernet l2 = IFloodlightProviderService.bcStore.get(cntx, IFloodlightProviderService.CONTEXT_PI_PAYLOAD);
+        if (l2.getEtherType() == EthType.IPv4) {
+            IPv4 l3 = (IPv4) l2.getPayload();
+            if (whiteListedHostsIPv4.contains(l3.getDestinationAddress())) {
+                log.info("Got IPv4 packet with whitelisted destination address {}", l3.getDestinationAddress());
+            } else if (whiteListedHostsIPv4.contains(l3.getSourceAddress())) {
+                log.info("Got IPv4 packet with whitelisted source address {}", l3.getSourceAddress());
+            }
+        }
+        return Command.CONTINUE;
     }
 
     @Override
