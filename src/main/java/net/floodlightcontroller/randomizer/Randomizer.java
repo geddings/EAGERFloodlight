@@ -10,23 +10,47 @@ import net.floodlightcontroller.core.module.IFloodlightModule;
 import net.floodlightcontroller.core.module.IFloodlightService;
 import org.projectfloodlight.openflow.protocol.OFMessage;
 import org.projectfloodlight.openflow.protocol.OFType;
+import org.projectfloodlight.openflow.types.IPv4Address;
+import org.projectfloodlight.openflow.types.IPv6Address;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by geddingsbarrineau on 7/14/16.
  */
-public class Randomizer implements IOFMessageListener, IFloodlightModule{
+public class Randomizer implements IOFMessageListener, IFloodlightModule {
 
     //================================================================================
     //region Properties
+    private ScheduledExecutorService executorService;
     private IFloodlightProviderService floodlightProvider;
     private static Logger log;
     //endregion
+    //================================================================================
+
+
+    //================================================================================
+    private void insertInboundFlows() {};
+
+    private void insertOutboundFlows() {};
+
+    private IPv4Address generateRandomIPv4Address() {
+        int minutes = LocalDateTime.now().getMinute();
+        return IPv4Address.of(10, 0, 0, minutes);
+    }
+
+    private IPv6Address generateRandomIPv6Address() {
+        return null;
+    }
+
     //================================================================================
 
 
@@ -81,6 +105,7 @@ public class Randomizer implements IOFMessageListener, IFloodlightModule{
 
     @Override
     public void init(FloodlightModuleContext context) throws FloodlightModuleException {
+        executorService = Executors.newSingleThreadScheduledExecutor();
         floodlightProvider = context.getServiceImpl(IFloodlightProviderService.class);
         log = LoggerFactory.getLogger(Randomizer.class);
     }
@@ -88,6 +113,14 @@ public class Randomizer implements IOFMessageListener, IFloodlightModule{
     @Override
     public void startUp(FloodlightModuleContext context) throws FloodlightModuleException {
         floodlightProvider.addOFMessageListener(OFType.PACKET_IN, this);
+
+        // Generate random IP addresses, strictly for test purposes
+        executorService.scheduleAtFixedRate(new Runnable() {
+            @Override
+            public void run() {
+                log.info("{}", generateRandomIPv4Address());
+            }
+        }, 0L, 5L, TimeUnit.SECONDS);
     }
     //endregion
     //================================================================================
