@@ -79,8 +79,10 @@ public class Randomizer implements IOFMessageListener, IFloodlightModule {
             IPv4 l3 = (IPv4) l2.getPayload();
             if (whiteListedHostsIPv4.contains(l3.getDestinationAddress())) {
                 log.info("Got IPv4 packet with whitelisted destination address {}", l3.getDestinationAddress());
+                return Command.STOP;
             } else if (whiteListedHostsIPv4.contains(l3.getSourceAddress())) {
                 log.info("Got IPv4 packet with whitelisted source address {}", l3.getSourceAddress());
+                return Command.STOP;
             }
         }
         return Command.CONTINUE;
