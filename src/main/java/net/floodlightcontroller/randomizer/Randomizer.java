@@ -27,6 +27,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by geddingsbarrineau on 7/14/16.
@@ -125,7 +126,7 @@ public class Randomizer implements IOFMessageListener, IFloodlightModule {
 
         OFFlowAdd flowAdd = factory.buildFlowAdd()
                 .setBufferId(OFBufferId.NO_BUFFER)
-                .setHardTimeout(1)
+                .setHardTimeout(5)
                 .setIdleTimeout(30)
                 .setPriority(32768)
                 .setMatch(match)
@@ -147,10 +148,9 @@ public class Randomizer implements IOFMessageListener, IFloodlightModule {
     }
 
     private void startTest() {
-//        executorService.scheduleAtFixedRate((Runnable) () -> {
-//            log.info("{}", generateRandomIPv4Address());
-//            log.info("{}", generateRandomIPv6Address());
-//        }, 0L, 5L, TimeUnit.SECONDS);
+        executorService.scheduleAtFixedRate((Runnable) () -> {
+            log.info("{}", generateRandomIPv4Address());
+        }, 0L, 5L, TimeUnit.SECONDS);
 
         whiteListedHostsIPv4.add(IPv4Address.of(10, 0, 0, 2));
     }
