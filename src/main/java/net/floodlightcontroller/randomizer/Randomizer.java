@@ -183,7 +183,7 @@ public class Randomizer implements IOFMessageListener, IFloodlightModule {
                 return Command.STOP;
             }
         }
-        return Command.CONTINUE;
+        return Command.STOP;
     }
 
     @Override
