@@ -49,9 +49,91 @@ public class Randomizer implements IOFMessageListener, IFloodlightModule {
 
     //================================================================================
     //region Helper Functions
-    private void insertInboundFlows() {};
+    private void insertInboundFlows(IOFSwitch sw, IPv4 l3) {
+        OFFactory factory = sw.getOFFactory();
 
-    private void insertOutboundFlows() {};
+        Match match = factory.buildMatch()
+                //.setExact(MatchField.IN_PORT, inPort)
+                .setExact(MatchField.ETH_TYPE, EthType.IPv4)
+                .setExact(MatchField.IPV4_SRC, generateRandomIPv4Address())
+                .build();
+
+        ArrayList<OFAction> actionList = new ArrayList<>();
+        OFActions actions = factory.actions();
+        OFOxms oxms = factory.oxms();
+
+                /* Use OXM to modify network layer dest field. */
+        OFActionSetField setNwSrc = actions.buildSetField()
+                .setField(
+                        oxms.buildIpv4Dst()
+                                .setValue(l3.getDestinationAddress())
+                                .build()
+                )
+                .build();
+        actionList.add(setNwSrc);
+
+                /* Output to a port is also an OFAction, not an OXM. */
+        OFActionOutput output = actions.buildOutput()
+                .setMaxLen(0xFFffFFff)
+                .setPort(OFPort.LOCAL)
+                .build();
+        actionList.add(output);
+
+        OFFlowAdd flowAdd = factory.buildFlowAdd()
+                .setBufferId(OFBufferId.NO_BUFFER)
+                .setHardTimeout(3600)
+                .setIdleTimeout(30)
+                .setPriority(32768)
+                .setMatch(match)
+                .setActions(actionList)
+                //.setTableId(TableId.of(1))
+                .build();
+
+        sw.write(flowAdd);
+    };
+
+    private void insertOutboundFlows(IOFSwitch sw, IPv4 l3) {
+        OFFactory factory = sw.getOFFactory();
+
+        Match match = factory.buildMatch()
+                //.setExact(MatchField.IN_PORT, inPort)
+                .setExact(MatchField.ETH_TYPE, EthType.IPv4)
+                .setExact(MatchField.IPV4_DST, l3.getDestinationAddress())
+                .build();
+
+        ArrayList<OFAction> actionList = new ArrayList<>();
+        OFActions actions = factory.actions();
+        OFOxms oxms = factory.oxms();
+
+                /* Use OXM to modify network layer dest field. */
+        OFActionSetField setNwDst = actions.buildSetField()
+                .setField(
+                        oxms.buildIpv4Dst()
+                                .setValue(generateRandomIPv4Address())
+                                .build()
+                )
+                .build();
+        actionList.add(setNwDst);
+
+                /* Output to a port is also an OFAction, not an OXM. */
+        OFActionOutput output = actions.buildOutput()
+                .setMaxLen(0xFFffFFff)
+                .setPort(OFPort.of(1))
+                .build();
+        actionList.add(output);
+
+        OFFlowAdd flowAdd = factory.buildFlowAdd()
+                .setBufferId(OFBufferId.NO_BUFFER)
+                .setHardTimeout(3600)
+                .setIdleTimeout(30)
+                .setPriority(32768)
+                .setMatch(match)
+                .setActions(actionList)
+                //.setTableId(TableId.of(1))
+                .build();
+
+        sw.write(flowAdd);
+    };
 
     private IPv4Address generateRandomIPv4Address() {
         int minutes = LocalDateTime.now().getMinute();
@@ -85,49 +167,9 @@ public class Randomizer implements IOFMessageListener, IFloodlightModule {
             IPv4 l3 = (IPv4) l2.getPayload();
             if (whiteListedHostsIPv4.contains(l3.getDestinationAddress())) {
                 log.info("Got IPv4 packet with whitelisted destination address {}", l3.getDestinationAddress());
-                log.info("Inserting Flow");
-
-                OFFactory factory = sw.getOFFactory();
-
-                Match match = factory.buildMatch()
-                        //.setExact(MatchField.IN_PORT, inPort)
-                        .setExact(MatchField.ETH_TYPE, EthType.IPv4)
-                        .setExact(MatchField.IPV4_DST, l3.getDestinationAddress())
-                        .build();
-
-                ArrayList<OFAction> actionList = new ArrayList<>();
-                OFActions actions = factory.actions();
-                OFOxms oxms = factory.oxms();
-
-                /* Use OXM to modify network layer dest field. */
-                OFActionSetField setNwDst = actions.buildSetField()
-                        .setField(
-                                oxms.buildIpv4Dst()
-                                        .setValue(generateRandomIPv4Address())
-                                        .build()
-                        )
-                        .build();
-                actionList.add(setNwDst);
-
-                /* Output to a port is also an OFAction, not an OXM. */
-                OFActionOutput output = actions.buildOutput()
-                        .setMaxLen(0xFFffFFff)
-                        .setPort(OFPort.of(1))
-                        .build();
-                actionList.add(output);
-
-                OFFlowAdd flowAdd = factory.buildFlowAdd()
-                        .setBufferId(OFBufferId.NO_BUFFER)
-                        .setHardTimeout(3600)
-                        .setIdleTimeout(30)
-                        .setPriority(32768)
-                        .setMatch(match)
-                        .setActions(actionList)
-                        //.setTableId(TableId.of(1))
-                        .build();
-
-                sw.write(flowAdd);
-
+                log.info("Inserting Flows");
+                insertInboundFlows(sw, l3);
+                insertOutboundFlows(sw, l3);
                 return Command.STOP;
             } else if (whiteListedHostsIPv4.contains(l3.getSourceAddress())) {
                 log.info("Got IPv4 packet with whitelisted source address {}", l3.getSourceAddress());
