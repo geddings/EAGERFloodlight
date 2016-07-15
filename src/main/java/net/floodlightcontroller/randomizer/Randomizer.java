@@ -43,13 +43,15 @@ public class Randomizer implements IOFMessageListener, IFloodlightModule {
 
     private List<IPv4Address> whiteListedHostsIPv4;
     private List<IPv6Address> whiteListedHostsIPv6;
+
+
     //endregion
     //================================================================================
 
 
     //================================================================================
     //region Helper Functions
-    private void insertInboundFlows(IOFSwitch sw, IPv4 l3) {
+    private void insertInboundFlows(IOFSwitch sw, IPv4Address l3Address) {
         OFFactory factory = sw.getOFFactory();
 
         Match match = factory.buildMatch()
@@ -66,7 +68,7 @@ public class Randomizer implements IOFMessageListener, IFloodlightModule {
         OFActionSetField setNwSrc = actions.buildSetField()
                 .setField(
                         oxms.buildIpv4Dst()
-                                .setValue(l3.getDestinationAddress())
+                                .setValue(l3Address)
                                 .build()
                 )
                 .build();
@@ -92,13 +94,13 @@ public class Randomizer implements IOFMessageListener, IFloodlightModule {
         sw.write(flowAdd);
     };
 
-    private void insertOutboundFlows(IOFSwitch sw, IPv4 l3) {
+    private void insertOutboundFlows(IOFSwitch sw, IPv4Address l3Address) {
         OFFactory factory = sw.getOFFactory();
 
         Match match = factory.buildMatch()
                 //.setExact(MatchField.IN_PORT, inPort)
                 .setExact(MatchField.ETH_TYPE, EthType.IPv4)
-                .setExact(MatchField.IPV4_DST, l3.getDestinationAddress())
+                .setExact(MatchField.IPV4_DST, l3Address)
                 .build();
 
         ArrayList<OFAction> actionList = new ArrayList<>();
@@ -168,11 +170,16 @@ public class Randomizer implements IOFMessageListener, IFloodlightModule {
             if (whiteListedHostsIPv4.contains(l3.getDestinationAddress())) {
                 log.info("Got IPv4 packet with whitelisted destination address {}", l3.getDestinationAddress());
                 log.info("Inserting Flows");
-                insertInboundFlows(sw, l3);
-                insertOutboundFlows(sw, l3);
+                insertInboundFlows(sw, l3.getSourceAddress());
+                insertOutboundFlows(sw, l3.getDestinationAddress());
                 return Command.STOP;
             } else if (whiteListedHostsIPv4.contains(l3.getSourceAddress())) {
                 log.info("Got IPv4 packet with whitelisted source address {}", l3.getSourceAddress());
+                return Command.STOP;
+            } else if (generateRandomIPv4Address().equals(l3.getDestinationAddress())) {
+                log.info("Inserting hardcoded flows... FIX ME PLEASE");
+                insertInboundFlows(sw, IPv4Address.of(10, 0, 0, 2));
+                insertOutboundFlows(sw, IPv4Address.of(10, 0, 0, 1));
                 return Command.STOP;
             }
         }
