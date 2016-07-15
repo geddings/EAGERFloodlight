@@ -10,12 +10,12 @@ import net.floodlightcontroller.core.module.IFloodlightModule;
 import net.floodlightcontroller.core.module.IFloodlightService;
 import net.floodlightcontroller.packet.Ethernet;
 import net.floodlightcontroller.packet.IPv4;
-import org.projectfloodlight.openflow.protocol.OFMessage;
-import org.projectfloodlight.openflow.protocol.OFPacketIn;
-import org.projectfloodlight.openflow.protocol.OFType;
-import org.projectfloodlight.openflow.types.EthType;
-import org.projectfloodlight.openflow.types.IPv4Address;
-import org.projectfloodlight.openflow.types.IPv6Address;
+import net.floodlightcontroller.staticentry.IStaticEntryPusherService;
+import org.projectfloodlight.openflow.protocol.*;
+import org.projectfloodlight.openflow.protocol.action.OFAction;
+import org.projectfloodlight.openflow.protocol.match.Match;
+import org.projectfloodlight.openflow.protocol.match.MatchField;
+import org.projectfloodlight.openflow.types.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,6 +34,7 @@ public class Randomizer implements IOFMessageListener, IFloodlightModule {
     //region Properties
     private ScheduledExecutorService executorService;
     private IFloodlightProviderService floodlightProvider;
+    private IStaticEntryPusherService staticEntryPusherService;
     private static Logger log;
 
     private List<IPv4Address> whiteListedHostsIPv4;
@@ -79,6 +80,26 @@ public class Randomizer implements IOFMessageListener, IFloodlightModule {
             IPv4 l3 = (IPv4) l2.getPayload();
             if (whiteListedHostsIPv4.contains(l3.getDestinationAddress())) {
                 log.info("Got IPv4 packet with whitelisted destination address {}", l3.getDestinationAddress());
+                OFFactory factory = sw.getOFFactory();
+                OFFlowAdd.Builder flow = factory.buildFlowAdd();
+                Match.Builder match = factory.buildMatch();
+                ArrayList<OFAction> actionList = new ArrayList<>();
+
+                // TODO Match on more fields.
+                match.setExact(MatchField.IN_PORT, pi.getInPort());
+                match.setExact(MatchField.ETH_TYPE, EthType.IPv4);
+                match.setExact(MatchField.IPV4_SRC, l3.getDestinationAddress());
+
+                actionList.add(factory.actions().setNwDst(generateRandomIPv4Address()));
+
+                flow.setBufferId(OFBufferId.NO_BUFFER);
+                flow.setOutPort(OFPort.ANY);
+                flow.setActions(actionList);
+                flow.setMatch(match.build());
+                flow.setPriority(32767);
+                flow.setIdleTimeout(30);
+
+                staticEntryPusherService.addFlow("Randomize", flow.build(), sw.getId());
                 return Command.STOP;
             } else if (whiteListedHostsIPv4.contains(l3.getSourceAddress())) {
                 log.info("Got IPv4 packet with whitelisted source address {}", l3.getSourceAddress());
@@ -134,6 +155,7 @@ public class Randomizer implements IOFMessageListener, IFloodlightModule {
     public void init(FloodlightModuleContext context) throws FloodlightModuleException {
         executorService = Executors.newSingleThreadScheduledExecutor();
         floodlightProvider = context.getServiceImpl(IFloodlightProviderService.class);
+        staticEntryPusherService = context.getServiceImpl(IStaticEntryPusherService.class);
         log = LoggerFactory.getLogger(Randomizer.class);
 
         whiteListedHostsIPv4 = new ArrayList<>();
