@@ -182,6 +182,8 @@ public class Randomizer implements IOFMessageListener, IFloodlightModule {
                 insertOutboundFlows(sw, IPv4Address.of(10, 0, 0, 1));
                 return Command.STOP;
             }
+        } else if (l2.getEtherType() == EthType.ARP) {
+            return Command.CONTINUE;
         }
         return Command.STOP;
     }
