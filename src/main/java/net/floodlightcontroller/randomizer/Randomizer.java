@@ -89,7 +89,7 @@ public class Randomizer implements IOFMessageListener, IFloodlightModule {
                 OFFactory factory = sw.getOFFactory();
 
                 Match match = factory.buildMatch()
-                        .setExact(MatchField.IN_PORT, inPort)
+                        //.setExact(MatchField.IN_PORT, inPort)
                         .setExact(MatchField.ETH_TYPE, EthType.IPv4)
                         .setExact(MatchField.IPV4_DST, l3.getDestinationAddress())
                         .build();
