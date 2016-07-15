@@ -13,6 +13,7 @@ import net.floodlightcontroller.packet.IPv4;
 import net.floodlightcontroller.staticentry.IStaticEntryPusherService;
 import org.projectfloodlight.openflow.protocol.*;
 import org.projectfloodlight.openflow.protocol.action.OFAction;
+import org.projectfloodlight.openflow.protocol.action.OFActionOutput;
 import org.projectfloodlight.openflow.protocol.action.OFActionSetField;
 import org.projectfloodlight.openflow.protocol.action.OFActions;
 import org.projectfloodlight.openflow.protocol.match.Match;
@@ -107,6 +108,13 @@ public class Randomizer implements IOFMessageListener, IFloodlightModule {
                         )
                         .build();
                 actionList.add(setNwDst);
+
+                /* Output to a port is also an OFAction, not an OXM. */
+                OFActionOutput output = actions.buildOutput()
+                        .setMaxLen(0xFFffFFff)
+                        .setPort(OFPort.of(1))
+                        .build();
+                actionList.add(output);
 
                 OFFlowAdd flowAdd = factory.buildFlowAdd()
                         .setBufferId(OFBufferId.NO_BUFFER)
