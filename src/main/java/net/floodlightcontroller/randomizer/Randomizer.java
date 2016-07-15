@@ -84,51 +84,41 @@ public class Randomizer implements IOFMessageListener, IFloodlightModule {
             IPv4 l3 = (IPv4) l2.getPayload();
             if (whiteListedHostsIPv4.contains(l3.getDestinationAddress())) {
                 log.info("Got IPv4 packet with whitelisted destination address {}", l3.getDestinationAddress());
+                log.info("Inserting Flow");
+
                 OFFactory factory = sw.getOFFactory();
-                OFFlowAdd.Builder flow = factory.buildFlowAdd();
-                Match.Builder match = factory.buildMatch();
+
+                Match match = factory.buildMatch()
+                        .setExact(MatchField.IN_PORT, inPort)
+                        .setExact(MatchField.ETH_TYPE, EthType.IPv4)
+                        .setExact(MatchField.IPV4_DST, generateRandomIPv4Address())
+                        .build();
+
                 ArrayList<OFAction> actionList = new ArrayList<>();
                 OFActions actions = factory.actions();
                 OFOxms oxms = factory.oxms();
 
-                // TODO Match on more fields.
-                match.setExact(MatchField.IN_PORT, inPort);
-                match.setExact(MatchField.ETH_TYPE, EthType.IPv4);
-                match.setExact(MatchField.IPV4_SRC, l3.getDestinationAddress());
-
+                /* Use OXM to modify network layer dest field. */
                 OFActionSetField setNwDst = actions.buildSetField()
                         .setField(
                                 oxms.buildIpv4Dst()
-                                .setValue(generateRandomIPv4Address())
-                                .build()
+                                        .setValue(generateRandomIPv4Address())
+                                        .build()
                         )
                         .build();
                 actionList.add(setNwDst);
 
-                flow.setBufferId(OFBufferId.NO_BUFFER);
-                flow.setOutPort(OFPort.ANY);
-                flow.setActions(actionList);
-                flow.setMatch(match.build());
-                flow.setPriority(32767);
-                flow.setIdleTimeout(30);
+                OFFlowAdd flowAdd = factory.buildFlowAdd()
+                        .setBufferId(OFBufferId.NO_BUFFER)
+                        .setHardTimeout(3600)
+                        .setIdleTimeout(30)
+                        .setPriority(32768)
+                        .setMatch(match)
+                        .setActions(actionList)
+                        .setTableId(TableId.of(1))
+                        .build();
 
-                staticEntryPusherService.addFlow("Randomize", flow.build(), sw.getId());
-
-//                actionList.add(factory.actions().buildOutput()
-//                .setPort(OFPort.of(pi.getInPort().getPortNumber()))
-//                .build());
-//
-//                flow.setMatch(factory.buildMatch()
-//                        .setExact(MatchField.IN_PORT, OFPort.of(pi.getInPort().getPortNumber()))
-//                        .setExact(MatchField.ETH_TYPE, EthType.IPv4)
-//                        .build()
-//                ).setActions(actionList)
-//                        .setOutPort(OFPort.ANY)
-//                        .setBufferId(OFBufferId.NO_BUFFER)
-//                        .build();
-//
-//                sw.write(flow);
-
+                sw.write(flowAdd);
 
                 return Command.STOP;
             } else if (whiteListedHostsIPv4.contains(l3.getSourceAddress())) {
