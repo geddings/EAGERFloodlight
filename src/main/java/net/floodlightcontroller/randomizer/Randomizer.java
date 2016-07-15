@@ -75,6 +75,7 @@ public class Randomizer implements IOFMessageListener, IFloodlightModule {
     @Override
     public Command receive(IOFSwitch sw, OFMessage msg, FloodlightContext cntx) {
         OFPacketIn pi = (OFPacketIn) msg;
+        OFPort inPort = (pi.getVersion().compareTo(OFVersion.OF_12) < 0 ? pi.getInPort() : pi.getMatch().get(MatchField.IN_PORT));
         Ethernet l2 = IFloodlightProviderService.bcStore.get(cntx, IFloodlightProviderService.CONTEXT_PI_PAYLOAD);
         if (l2.getEtherType() == EthType.IPv4) {
             IPv4 l3 = (IPv4) l2.getPayload();
@@ -86,7 +87,7 @@ public class Randomizer implements IOFMessageListener, IFloodlightModule {
                 ArrayList<OFAction> actionList = new ArrayList<>();
 
                 // TODO Match on more fields.
-                match.setExact(MatchField.IN_PORT, pi.getInPort());
+                match.setExact(MatchField.IN_PORT, inPort);
                 match.setExact(MatchField.ETH_TYPE, EthType.IPv4);
                 match.setExact(MatchField.IPV4_SRC, l3.getDestinationAddress());
 
@@ -100,6 +101,23 @@ public class Randomizer implements IOFMessageListener, IFloodlightModule {
                 flow.setIdleTimeout(30);
 
                 staticEntryPusherService.addFlow("Randomize", flow.build(), sw.getId());
+
+//                actionList.add(factory.actions().buildOutput()
+//                .setPort(OFPort.of(pi.getInPort().getPortNumber()))
+//                .build());
+//
+//                flow.setMatch(factory.buildMatch()
+//                        .setExact(MatchField.IN_PORT, OFPort.of(pi.getInPort().getPortNumber()))
+//                        .setExact(MatchField.ETH_TYPE, EthType.IPv4)
+//                        .build()
+//                ).setActions(actionList)
+//                        .setOutPort(OFPort.ANY)
+//                        .setBufferId(OFBufferId.NO_BUFFER)
+//                        .build();
+//
+//                sw.write(flow);
+
+
                 return Command.STOP;
             } else if (whiteListedHostsIPv4.contains(l3.getSourceAddress())) {
                 log.info("Got IPv4 packet with whitelisted source address {}", l3.getSourceAddress());
