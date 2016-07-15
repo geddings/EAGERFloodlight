@@ -83,7 +83,7 @@ public class Randomizer implements IOFMessageListener, IFloodlightModule {
 
         OFFlowAdd flowAdd = factory.buildFlowAdd()
                 .setBufferId(OFBufferId.NO_BUFFER)
-                .setHardTimeout(1)
+                .setHardTimeout(5)
                 .setIdleTimeout(30)
                 .setPriority(32768)
                 .setMatch(match)
