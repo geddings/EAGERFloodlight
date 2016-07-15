@@ -115,7 +115,7 @@ public class Randomizer implements IOFMessageListener, IFloodlightModule {
                         .setPriority(32768)
                         .setMatch(match)
                         .setActions(actionList)
-                        .setTableId(TableId.of(1))
+                        //.setTableId(TableId.of(1))
                         .build();
 
                 sw.write(flowAdd);
