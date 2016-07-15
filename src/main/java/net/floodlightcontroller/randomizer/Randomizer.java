@@ -176,7 +176,7 @@ public class Randomizer implements IOFMessageListener, IFloodlightModule {
             } else if (whiteListedHostsIPv4.contains(l3.getSourceAddress())) {
                 log.info("Got IPv4 packet with whitelisted source address {}", l3.getSourceAddress());
                 return Command.STOP;
-            } else (generateRandomIPv4Address().equals(l3.getDestinationAddress())) {
+            } else {
                 log.info("Inserting hardcoded flows... FIX ME PLEASE");
                 insertInboundFlows(sw, IPv4Address.of(10, 0, 0, 2), generateRandomIPv4Address(), OFPort.of(1));
                 insertOutboundFlows(sw, generateRandomIPv4Address(), IPv4Address.of(10, 0, 0, 2), OFPort.LOCAL);
