@@ -13,8 +13,11 @@ import net.floodlightcontroller.packet.IPv4;
 import net.floodlightcontroller.staticentry.IStaticEntryPusherService;
 import org.projectfloodlight.openflow.protocol.*;
 import org.projectfloodlight.openflow.protocol.action.OFAction;
+import org.projectfloodlight.openflow.protocol.action.OFActionSetField;
+import org.projectfloodlight.openflow.protocol.action.OFActions;
 import org.projectfloodlight.openflow.protocol.match.Match;
 import org.projectfloodlight.openflow.protocol.match.MatchField;
+import org.projectfloodlight.openflow.protocol.oxm.OFOxms;
 import org.projectfloodlight.openflow.types.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -85,13 +88,22 @@ public class Randomizer implements IOFMessageListener, IFloodlightModule {
                 OFFlowAdd.Builder flow = factory.buildFlowAdd();
                 Match.Builder match = factory.buildMatch();
                 ArrayList<OFAction> actionList = new ArrayList<>();
+                OFActions actions = factory.actions();
+                OFOxms oxms = factory.oxms();
 
                 // TODO Match on more fields.
                 match.setExact(MatchField.IN_PORT, inPort);
                 match.setExact(MatchField.ETH_TYPE, EthType.IPv4);
                 match.setExact(MatchField.IPV4_SRC, l3.getDestinationAddress());
 
-                actionList.add(factory.actions().setNwDst(generateRandomIPv4Address()));
+                OFActionSetField setNwDst = actions.buildSetField()
+                        .setField(
+                                oxms.buildIpv4Dst()
+                                .setValue(generateRandomIPv4Address())
+                                .build()
+                        )
+                        .build();
+                actionList.add(setNwDst);
 
                 flow.setBufferId(OFBufferId.NO_BUFFER);
                 flow.setOutPort(OFPort.ANY);
