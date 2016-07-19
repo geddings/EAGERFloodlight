@@ -138,9 +138,9 @@ public class Randomizer implements IOFMessageListener, IFloodlightModule {
     };
 
     private IPv4Address generateRandomIPv4Address() {
-//        int minutes = LocalDateTime.now().getMinute();
+        int minutes = LocalDateTime.now().getMinute();
         int seconds = LocalDateTime.now().getSecond();
-        return IPv4Address.of(10, 0, 0, seconds);
+        return IPv4Address.of(10, 0, 0, minutes);
     }
 
     private IPv6Address generateRandomIPv6Address() {
@@ -150,7 +150,7 @@ public class Randomizer implements IOFMessageListener, IFloodlightModule {
     private void startTest() {
         executorService.scheduleAtFixedRate((Runnable) () -> {
             log.info("{}", generateRandomIPv4Address());
-        }, 0L, 5L, TimeUnit.SECONDS);
+        }, 0L, 20L, TimeUnit.SECONDS);
 
         whiteListedHostsIPv4.add(IPv4Address.of(10, 0, 0, 2));
     }
