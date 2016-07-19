@@ -326,6 +326,7 @@ public class Randomizer implements IOFMessageListener, IFloodlightModule {
 
         Map<String, String> configParameters = context.getConfigParams(this);
         String tmp = configParameters.get("randomize-host");
+        log.info("tmp is {}", tmp);
         if (tmp != null) {
             tmp = tmp.trim().toLowerCase();
             if (tmp.contains("yes") && tmp.contains("true")) {
