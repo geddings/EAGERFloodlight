@@ -329,7 +329,7 @@ public class Randomizer implements IOFMessageListener, IFloodlightModule {
         log.info("tmp is {}", tmp);
         if (tmp != null) {
             tmp = tmp.trim().toLowerCase();
-            if (tmp.contains("yes") && tmp.contains("true")) {
+            if (tmp.contains("yes") || tmp.contains("true")) {
                 LOCAL_HOST_IS_RANDOMIZED = true;
                 log.info("Local host will be treated as having randomized addresses.");
             } else {
