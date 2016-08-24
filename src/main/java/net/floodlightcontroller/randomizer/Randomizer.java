@@ -44,6 +44,7 @@ public class Randomizer implements IOFMessageListener, IFloodlightModule {
     private List<IPv4Address> whiteListedHostsIPv4;
     private List<IPv6Address> whiteListedHostsIPv6;
 
+    private Map<IPv4Address, IPv4Address> randomizedServerList;
     private static boolean LOCAL_HOST_IS_RANDOMIZED = false;
 
 
@@ -252,22 +253,31 @@ public class Randomizer implements IOFMessageListener, IFloodlightModule {
         Ethernet l2 = IFloodlightProviderService.bcStore.get(cntx, IFloodlightProviderService.CONTEXT_PI_PAYLOAD);
         if (l2.getEtherType() == EthType.IPv4) {
             IPv4 l3 = (IPv4) l2.getPayload();
+            // Is the local host supposed to be randomized? (Defined in the properties file)
             if (LOCAL_HOST_IS_RANDOMIZED) {
                 log.info("IPv4 packet seen on Randomized host.");
-                if (inPort.equals(OFPort.LOCAL)) {
-                    log.info("LOCAL! Inserting flow to encrypt the source IP.");
-                    insertSourceEncryptFlow(sw, l3);
-                } else {
-                    log.info("Other! Inserting flow to decrypt the destination IP.");
+                // Is this packet part of the randomized connection?
+                // For randomized host, there are two things to look for:
+                // 1) Is the dst a random address in use currently? If so, a flow needs to be inserted.
+                // 2) Is the src a real server address? If so, a flow needs to be inserted.
+                if (randomizedServerList.containsValue(l3.getDestinationAddress())) {
+                    log.info("Packet is destined for a server's random address contained in the randomized server list.");
                     insertDestinationDecryptFlow(sw, l3);
+                } else if (randomizedServerList.containsKey(l3.getSourceAddress())) {
+                    log.info("Packet is coming from a server's real address contained in the randomized server list.");
+                    insertSourceEncryptFlow(sw, l3);
                 }
             } else {
                 log.info("IPv4 packet seen on non-Randomized host.");
-                if (inPort.equals(OFPort.LOCAL)) {
-                    log.info("LOCAL! Inserting flow to encrypt the destination IP.");
+                // Is this packet part of the randomized connection?
+                // For non-randomized host, there are two things to look for:
+                // 1) Is the dst a real server address? If so, a flow needs to be inserted.
+                // 2) Is the src a random address in use currently? If so, a flow needs to be inserted.
+                if (randomizedServerList.containsKey(l3.getDestinationAddress())) {
+                    log.info("Packet is destined for a server's real address contained in the randomized server list.");
                     insertDestinationEncryptFlow(sw, l3);
-                } else {
-                    log.info("Other! Inserting flow to decrypt the source IP.");
+                } else if (randomizedServerList.containsValue(l3.getSourceAddress())) {
+                    log.info("Packet is coming from a server's random address contained in the randomized server list.");
                     insertSourceDecryptFlow(sw, l3);
                 }
             }
@@ -341,6 +351,9 @@ public class Randomizer implements IOFMessageListener, IFloodlightModule {
 
         whiteListedHostsIPv4 = new ArrayList<>();
         whiteListedHostsIPv6 = new ArrayList<>();
+
+        randomizedServerList = new HashMap<>();
+        randomizedServerList.put(IPv4Address.of(10,0,0,2), IPv4Address.of(20,0,0,2));
     }
 
     @Override
