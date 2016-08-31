@@ -8,22 +8,22 @@ import org.projectfloodlight.openflow.types.IPv6Address;
  * Created by geddingsbarrineau on 8/31/16.
  */
 public class Client {
-    private IPv4Address ipv4address;
+    private IPv4Address iPv4Address;
     private IPv6Address iPv6Address;
     private SwitchPort switchPort;
 
-    public Client(IPv4Address ipv4address, IPv6Address iPv6Address, SwitchPort switchPort) {
-        this.ipv4address = ipv4address;
+    public Client(IPv4Address iPv4address, IPv6Address iPv6Address, SwitchPort switchPort) {
+        this.iPv4Address = iPv4address;
         this.iPv6Address = iPv6Address;
         this.switchPort = switchPort;
     }
 
     public IPv4Address getIpv4address() {
-        return ipv4address;
+        return iPv4Address;
     }
 
-    public void setIpv4address(IPv4Address ipv4address) {
-        this.ipv4address = ipv4address;
+    public void setIpv4address(IPv4Address iPv4Address) {
+        this.iPv4Address = iPv4Address;
     }
 
     public IPv6Address getiPv6Address() {
@@ -45,7 +45,7 @@ public class Client {
     @Override
     public String toString() {
         return "Client{" +
-                "ipv4address=" + ipv4address +
+                "iPv4Address=" + iPv4Address +
                 ", iPv6Address=" + iPv6Address +
                 ", switchPort=" + switchPort +
                 '}';
@@ -58,7 +58,7 @@ public class Client {
 
         Client client = (Client) o;
 
-        if (ipv4address != null ? !ipv4address.equals(client.ipv4address) : client.ipv4address != null) return false;
+        if (iPv4Address != null ? !iPv4Address.equals(client.iPv4Address) : client.iPv4Address != null) return false;
         if (iPv6Address != null ? !iPv6Address.equals(client.iPv6Address) : client.iPv6Address != null) return false;
         return switchPort != null ? switchPort.equals(client.switchPort) : client.switchPort == null;
 
@@ -66,7 +66,7 @@ public class Client {
 
     @Override
     public int hashCode() {
-        int result = ipv4address != null ? ipv4address.hashCode() : 0;
+        int result = iPv4Address != null ? iPv4Address.hashCode() : 0;
         result = 31 * result + (iPv6Address != null ? iPv6Address.hashCode() : 0);
         result = 31 * result + (switchPort != null ? switchPort.hashCode() : 0);
         return result;
