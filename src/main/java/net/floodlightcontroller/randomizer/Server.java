@@ -17,6 +17,14 @@ public class Server {
 
     private SwitchPort switchPort;
 
+    public Server(IPv4Address iPv4AddressReal, IPv4Address iPv4AddressFake, IPv6Address iPv6AddressReal, IPv6Address iPv6AddressFake, SwitchPort switchPort) {
+        this.iPv4AddressReal = iPv4AddressReal;
+        this.iPv4AddressFake = iPv4AddressFake;
+        this.iPv6AddressReal = iPv6AddressReal;
+        this.iPv6AddressFake = iPv6AddressFake;
+        this.switchPort = switchPort;
+    }
+
     public IPv4Address getiPv4AddressReal() {
         return iPv4AddressReal;
     }
@@ -95,5 +103,43 @@ public class Server {
         result = 31 * result + (iPv6AddressFake != null ? iPv6AddressFake.hashCode() : 0);
         result = 31 * result + (switchPort != null ? switchPort.hashCode() : 0);
         return result;
+    }
+
+    public static class ServerBuilder {
+
+        private IPv4Address iPv4AddressReal = null;
+        private IPv4Address iPv4AddressFake = null;
+        private IPv6Address iPv6AddressReal = null;
+        private IPv6Address iPv6AddressFake = null;
+        private SwitchPort switchPort = null;
+
+        public ServerBuilder setiPv4AddressReal(IPv4Address iPv4AddressReal) {
+            this.iPv4AddressReal = iPv4AddressReal;
+            return this;
+        }
+
+        public ServerBuilder setiPv4AddressFake(IPv4Address iPv4AddressFake) {
+            this.iPv4AddressFake = iPv4AddressFake;
+            return this;
+        }
+
+        public ServerBuilder setiPv6AddressReal(IPv6Address iPv6AddressReal) {
+            this.iPv6AddressReal = iPv6AddressReal;
+            return this;
+        }
+
+        public ServerBuilder setiPv6AddressFake(IPv6Address iPv6AddressFake) {
+            this.iPv6AddressFake = iPv6AddressFake;
+            return this;
+        }
+
+        public ServerBuilder setSwitchPort(SwitchPort switchPort) {
+            this.switchPort = switchPort;
+            return this;
+        }
+
+        public Server createServer() {
+            return new Server(iPv4AddressReal, iPv4AddressFake, iPv6AddressReal, iPv6AddressFake, switchPort);
+        }
     }
 }
