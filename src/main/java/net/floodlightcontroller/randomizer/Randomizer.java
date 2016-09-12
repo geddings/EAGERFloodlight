@@ -60,6 +60,49 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
 
     //================================================================================
     //region Helper Functions
+    private void insertArpReplyEncryptFlow(IOFSwitch sw, ARP arp, OFPort out) {
+        OFFactory factory = sw.getOFFactory();
+
+        Match match = factory.buildMatch()
+                //.setExact(MatchField.IN_PORT, inPort)
+                .setExact(MatchField.ETH_TYPE, EthType.ARP)
+                .setExact(MatchField.ARP_SPA, (IPv4Address)getKeyFromValue(randomizedServerList, arp.getTargetProtocolAddress()))
+                .build();
+
+        ArrayList<OFAction> actionList = new ArrayList<>();
+        OFActions actions = factory.actions();
+        OFOxms oxms = factory.oxms();
+
+                /* Use OXM to modify network layer dest field. */
+        OFActionSetField setArpSpa = actions.buildSetField()
+                .setField(
+                        oxms.buildArpSpa()
+                                .setValue(arp.getTargetProtocolAddress())
+                                .build()
+                )
+                .build();
+        actionList.add(setArpSpa);
+
+                /* Output to a port is also an OFAction, not an OXM. */
+        OFActionOutput output = actions.buildOutput()
+                .setMaxLen(0xFFffFFff)
+                .setPort(out)
+                .build();
+        actionList.add(output);
+
+        OFFlowAdd flowAdd = factory.buildFlowAdd()
+                .setBufferId(OFBufferId.NO_BUFFER)
+                .setHardTimeout(30)
+                .setIdleTimeout(30)
+                .setPriority(32768)
+                .setMatch(match)
+                .setActions(actionList)
+                //.setTableId(TableId.of(1))
+                .build();
+
+        sw.write(flowAdd);
+    }
+
     private void insertArpRequestDecryptFlow(IOFSwitch sw, ARP arp, OFPort out) {
         OFFactory factory = sw.getOFFactory();
 
@@ -436,6 +479,7 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
                 log.info("ARP packet seen on Randomized host. Inserting ARP flows...");
                 if (randomizedServerList.containsValue(arp.getTargetProtocolAddress())) {
                     insertArpRequestDecryptFlow(sw, arp, OFPort.of(1)); // Port should be facing the host.
+                    insertArpReplyEncryptFlow(sw, arp, OFPort.of(2)); // Port should be facing the BGP router.
                 }
             }
         }
