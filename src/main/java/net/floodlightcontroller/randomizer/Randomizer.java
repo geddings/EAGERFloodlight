@@ -60,6 +60,49 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
 
     //================================================================================
     //region Helper Functions
+    private void insertArpRequestDecryptFlow(IOFSwitch sw, ARP arp, OFPort out) {
+        OFFactory factory = sw.getOFFactory();
+
+        Match match = factory.buildMatch()
+                //.setExact(MatchField.IN_PORT, inPort)
+                .setExact(MatchField.ETH_TYPE, EthType.ARP)
+                .setExact(MatchField.ARP_TPA, arp.getTargetProtocolAddress())
+                .build();
+
+        ArrayList<OFAction> actionList = new ArrayList<>();
+        OFActions actions = factory.actions();
+        OFOxms oxms = factory.oxms();
+
+                /* Use OXM to modify network layer dest field. */
+        OFActionSetField setArpTpa = actions.buildSetField()
+                .setField(
+                        oxms.buildArpTpa()
+                                .setValue((IPv4Address)getKeyFromValue(randomizedServerList, arp.getTargetProtocolAddress()))
+                                .build()
+                )
+                .build();
+        actionList.add(setArpTpa);
+
+                /* Output to a port is also an OFAction, not an OXM. */
+        OFActionOutput output = actions.buildOutput()
+                .setMaxLen(0xFFffFFff)
+                .setPort(out)
+                .build();
+        actionList.add(output);
+
+        OFFlowAdd flowAdd = factory.buildFlowAdd()
+                .setBufferId(OFBufferId.NO_BUFFER)
+                .setHardTimeout(30)
+                .setIdleTimeout(30)
+                .setPriority(32768)
+                .setMatch(match)
+                .setActions(actionList)
+                //.setTableId(TableId.of(1))
+                .build();
+
+        sw.write(flowAdd);
+    }
+
     private void insertDestinationEncryptFlow(IOFSwitch sw, IPv4 l3, OFPort out) {
         OFFactory factory = sw.getOFFactory();
 
@@ -361,7 +404,7 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
                     return Command.STOP;
                 } else if (randomizedServerList.containsKey(l3.getSourceAddress())) {
                     log.info("2. Packet is coming from a server's real address contained in the randomized server list.");
-                    insertSourceEncryptFlow(sw, l3, OFPort.of(1));
+                    insertSourceEncryptFlow(sw, l3, OFPort.of(1)); // This port should be the port that leads to the BGP router.
                     return Command.STOP;
                 }
             } else {
@@ -373,7 +416,7 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
                 // 2) Is the src a random address in use currently? If so, a flow needs to be inserted.
                 if (randomizedServerList.containsKey(l3.getDestinationAddress())) {
                     log.info("3. Packet is destined for a server's real address contained in the randomized server list.");
-                    insertDestinationEncryptFlow(sw, l3, OFPort.of(2));
+                    insertDestinationEncryptFlow(sw, l3, OFPort.of(2)); // This port should be the port that leads to the BGP router.
                     return Command.STOP;
                 } else if (randomizedServerList.containsValue(l3.getSourceAddress())) {
                     log.info("4. Packet is coming from a server's random address contained in the randomized server list.");
@@ -383,6 +426,15 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
                         insertSourceDecryptFlow(sw, l3, aps[0].getPortId()); // TODO Make ports dynamic
                     }
                     return Command.STOP;
+                }
+            }
+        }
+        else if (l2.getEtherType() == EthType.ARP) {
+            ARP arp = (ARP) l2.getPayload();
+            if (LOCAL_HOST_IS_RANDOMIZED) {
+                log.info("ARP packet seen on Randomized host. Inserting ARP flows...");
+                if (randomizedServerList.containsValue(arp.getTargetProtocolAddress())) {
+                    insertArpRequestDecryptFlow(sw, arp, OFPort.of(1)); // Port should be facing the host.
                 }
             }
         }
