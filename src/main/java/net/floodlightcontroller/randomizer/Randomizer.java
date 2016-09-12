@@ -302,7 +302,8 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
 
     private void startTest() {
         executorService.scheduleAtFixedRate((Runnable) () -> {
-            randomizedServerList.put(IPv4Address.of(10,0,0,4), IPv4Address.of(generator.nextInt()));
+            //randomizedServerList.put(IPv4Address.of(10,0,0,4), IPv4Address.of(generator.nextInt()));
+            randomizedServerList.put(IPv4Address.of(10,0,0,4), generateRandomIPv4Address());
             log.info("{}", randomizedServerList);
             //findHostIPv4(IPv4Address.of(10, 0, 0, 3));
             //log.info("{}", deviceService.queryDevices(MacAddress.NONE, null, IPv4Address.of(10,0,0,3), IPv6Address.NONE, DatapathId.NONE, OFPort.ZERO).hasNext());
@@ -404,7 +405,7 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
                     return Command.STOP;
                 } else if (randomizedServerList.containsKey(l3.getSourceAddress())) {
                     log.info("2. Packet is coming from a server's real address contained in the randomized server list.");
-                    insertSourceEncryptFlow(sw, l3, OFPort.of(1)); // This port should be the port that leads to the BGP router.
+                    insertSourceEncryptFlow(sw, l3, OFPort.of(2)); // This port should be the port that leads to the BGP router.
                     return Command.STOP;
                 }
             } else {
