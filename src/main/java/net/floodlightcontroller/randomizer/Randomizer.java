@@ -350,7 +350,7 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
             log.info("{}", randomizedServerList);
             //findHostIPv4(IPv4Address.of(10, 0, 0, 3));
             //log.info("{}", deviceService.queryDevices(MacAddress.NONE, null, IPv4Address.of(10,0,0,3), IPv6Address.NONE, DatapathId.NONE, OFPort.ZERO).hasNext());
-        }, 0L, 20L, TimeUnit.SECONDS);
+        }, 0L, 30L, TimeUnit.SECONDS);
 
         whiteListedHostsIPv4.add(IPv4Address.of(10, 0, 0, 2));
 
