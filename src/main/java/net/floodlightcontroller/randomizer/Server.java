@@ -10,19 +10,67 @@ import org.projectfloodlight.openflow.types.IPv6Address;
 public class Server {
 
     private IPv4Address iPv4AddressReal;
+    private IPv4Address iPv4AddressFakePrev;
     private IPv4Address iPv4AddressFake;
-
+    private IPv4Address iPv4AddressFakeNext;
     private IPv6Address iPv6AddressReal;
+    private IPv6Address iPv6AddressFakePrev;
     private IPv6Address iPv6AddressFake;
-
+    private IPv6Address iPv6AddressFakeNext;
     private SwitchPort switchPort;
-
     public Server(IPv4Address iPv4AddressReal, IPv4Address iPv4AddressFake, IPv6Address iPv6AddressReal, IPv6Address iPv6AddressFake, SwitchPort switchPort) {
         this.iPv4AddressReal = iPv4AddressReal;
         this.iPv4AddressFake = iPv4AddressFake;
         this.iPv6AddressReal = iPv6AddressReal;
         this.iPv6AddressFake = iPv6AddressFake;
         this.switchPort = switchPort;
+    }
+
+    @Override
+    public String toString() {
+        return "Server{" +
+                "iPv4AddressReal=" + iPv4AddressReal +
+                ", iPv4AddressFakePrev=" + iPv4AddressFakePrev +
+                ", iPv4AddressFake=" + iPv4AddressFake +
+                ", iPv4AddressFakeNext=" + iPv4AddressFakeNext +
+                ", iPv6AddressReal=" + iPv6AddressReal +
+                ", iPv6AddressFakePrev=" + iPv6AddressFakePrev +
+                ", iPv6AddressFake=" + iPv6AddressFake +
+                ", iPv6AddressFakeNext=" + iPv6AddressFakeNext +
+                ", switchPort=" + switchPort +
+                '}';
+    }
+
+    public IPv6Address getiPv6AddressFakePrev() {
+        return iPv6AddressFakePrev;
+    }
+
+    public void setiPv6AddressFakePrev(IPv6Address iPv6AddressFakePrev) {
+        this.iPv6AddressFakePrev = iPv6AddressFakePrev;
+    }
+
+    public IPv6Address getiPv6AddressFakeNext() {
+        return iPv6AddressFakeNext;
+    }
+
+    public void setiPv6AddressFakeNext(IPv6Address iPv6AddressFakeNext) {
+        this.iPv6AddressFakeNext = iPv6AddressFakeNext;
+    }
+
+    public IPv4Address getiPv4AddressFakePrev() {
+        return iPv4AddressFakePrev;
+    }
+
+    public void setiPv4AddressFakePrev(IPv4Address iPv4AddressFakePrev) {
+        this.iPv4AddressFakePrev = iPv4AddressFakePrev;
+    }
+
+    public IPv4Address getiPv4AddressFakeNext() {
+        return iPv4AddressFakeNext;
+    }
+
+    public void setiPv4AddressFakeNext(IPv4Address iPv4AddressFakeNext) {
+        this.iPv4AddressFakeNext = iPv4AddressFakeNext;
     }
 
     public IPv4Address getiPv4AddressReal() {
@@ -63,17 +111,6 @@ public class Server {
 
     public void setSwitchPort(SwitchPort switchPort) {
         this.switchPort = switchPort;
-    }
-
-    @Override
-    public String toString() {
-        return "Server{" +
-                "iPv4AddressReal=" + iPv4AddressReal +
-                ", iPv4AddressFake=" + iPv4AddressFake +
-                ", iPv6AddressReal=" + iPv6AddressReal +
-                ", iPv6AddressFake=" + iPv6AddressFake +
-                ", switchPort=" + switchPort +
-                '}';
     }
 
     @Override

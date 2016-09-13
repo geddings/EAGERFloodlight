@@ -50,7 +50,7 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
     private List<IPv4Address> whiteListedHostsIPv4;
     private List<IPv6Address> whiteListedHostsIPv6;
 
-    private Map<IPv4Address, IPv4Address> randomizedServerList;
+    protected Map<IPv4Address, IPv4Address> randomizedServerList;
 
     private List<Server> serverList;
 
