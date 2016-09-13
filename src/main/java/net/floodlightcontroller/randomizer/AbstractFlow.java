@@ -11,14 +11,14 @@ import org.slf4j.LoggerFactory;
 abstract class AbstractFlow {
 
     protected IOFSwitch sw;
-    protected OFPort wanport = OFPort.of(1);
+    OFPort wanport = OFPort.of(1);
     //protected static boolean LOCAL_HOST_IS_RANDOMIZED = false;
     protected static Logger log;
 
     /* Flow properties */
-    protected int hardtimeout = 30;
-    protected int idletimeout = 30;
-    protected int priority = 32768;
+    int hardtimeout = 30;
+    int idletimeout = 30;
+    int flowpriority = 32768;
 
     public AbstractFlow(OFPort wanport) {
         this.wanport = wanport;

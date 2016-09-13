@@ -40,7 +40,7 @@ public class EncryptDestinationFlow extends AbstractFlow {
                 .setBufferId(OFBufferId.NO_BUFFER)
                 .setHardTimeout(hardtimeout)
                 .setIdleTimeout(idletimeout)
-                .setPriority(priority)
+                .setPriority(flowpriority)
                 .setMatch(createMatches(server))
                 .setActions(createActions(server))
                 //.setTableId(TableId.of(1))
