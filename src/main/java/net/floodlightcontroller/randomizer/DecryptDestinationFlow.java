@@ -3,6 +3,7 @@ package net.floodlightcontroller.randomizer;
 import net.floodlightcontroller.core.IOFSwitch;
 import org.projectfloodlight.openflow.protocol.OFFactory;
 import org.projectfloodlight.openflow.protocol.OFFlowAdd;
+import org.projectfloodlight.openflow.protocol.OFFlowDeleteStrict;
 import org.projectfloodlight.openflow.protocol.action.OFAction;
 import org.projectfloodlight.openflow.protocol.action.OFActionOutput;
 import org.projectfloodlight.openflow.protocol.action.OFActionSetField;
@@ -36,6 +37,25 @@ public class DecryptDestinationFlow extends AbstractFlow {
         IOFSwitch sw = Randomizer.switchService.getActiveSwitch(dpid);
         OFFactory factory = sw.getOFFactory();
         sw.write(createFlowAdd(server, factory));
+    }
+
+    @Override
+    public void removeFlow(Server server) {
+        IOFSwitch sw = Randomizer.switchService.getActiveSwitch(dpid);
+        OFFactory factory = sw.getOFFactory();
+        sw.write(createFlowDelete(server, factory));
+    }
+
+    private OFFlowDeleteStrict createFlowDelete(Server server, OFFactory factory) {
+        return factory.buildFlowDeleteStrict()
+                .setBufferId(OFBufferId.NO_BUFFER)
+                .setHardTimeout(hardtimeout)
+                .setIdleTimeout(idletimeout)
+                .setPriority(flowpriority)
+                .setMatch(createMatches(server, factory))
+                .setActions(createActions(server, factory))
+                //.setTableId(TableId.of(1))
+                .build();
     }
 
     private OFFlowAdd createFlowAdd(Server server, OFFactory factory) {

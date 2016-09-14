@@ -31,6 +31,8 @@ abstract class AbstractFlow {
 
     abstract public void insertFlow(Server server);
 
+    abstract public void removeFlow(Server server);
+
 }
 
 
