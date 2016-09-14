@@ -42,7 +42,7 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
     private ScheduledExecutorService executorService;
     private IDeviceService deviceService;
     private IFloodlightProviderService floodlightProvider;
-    private IOFSwitchService switchService;
+    protected static IOFSwitchService switchService;
     private IStaticEntryPusherService staticEntryPusherService;
     private static Logger log;
     private static Random generator;
@@ -50,7 +50,10 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
     private List<IPv4Address> whiteListedHostsIPv4;
     private List<IPv6Address> whiteListedHostsIPv6;
 
-    private Map<IPv4Address, IPv4Address> randomizedServerList;
+    protected Map<IPv4Address, IPv4Address> randomizedServerList;
+
+    private List<Server> serverList;
+
     private static boolean LOCAL_HOST_IS_RANDOMIZED = false;
 
     private int SEED = 1234;
@@ -560,6 +563,9 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
 
         randomizedServerList = new HashMap<>();
         randomizedServerList.put(IPv4Address.of(10,0,0,4), IPv4Address.of(20,0,0,4));
+
+        serverList = new ArrayList<>();
+        serverList.add(new Server.ServerBuilder().setiPv4AddressReal(IPv4Address.of(10,0,0,4)).createServer());
     }
 
     @Override
