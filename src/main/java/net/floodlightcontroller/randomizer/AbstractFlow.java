@@ -1,6 +1,7 @@
 package net.floodlightcontroller.randomizer;
 
-import net.floodlightcontroller.core.IOFSwitch;
+import net.floodlightcontroller.core.internal.IOFSwitchService;
+import org.projectfloodlight.openflow.types.DatapathId;
 import org.projectfloodlight.openflow.types.OFPort;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,10 +11,11 @@ import org.slf4j.LoggerFactory;
  */
 abstract class AbstractFlow {
 
-    protected IOFSwitch sw;
+    protected DatapathId dpid;
     OFPort wanport = OFPort.of(1);
     //protected static boolean LOCAL_HOST_IS_RANDOMIZED = false;
     protected static Logger log;
+    protected IOFSwitchService switchService;
 
     /* Flow properties */
     int hardtimeout = 30;
