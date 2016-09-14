@@ -1,9 +1,13 @@
 package net.floodlightcontroller.randomizer;
 
+import org.projectfloodlight.openflow.protocol.action.OFAction;
+import org.projectfloodlight.openflow.protocol.match.Match;
 import org.projectfloodlight.openflow.types.DatapathId;
 import org.projectfloodlight.openflow.types.OFPort;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
 
 /**
  * Created by geddingsbarrineau on 9/13/16.
@@ -17,6 +21,8 @@ abstract class AbstractFlow {
     protected static Logger log;
 
     /* Flow properties */
+    Match match = null;
+    ArrayList<OFAction> action = null;
     int hardtimeout = 30;
     int idletimeout = 30;
     int flowpriority = 32768;

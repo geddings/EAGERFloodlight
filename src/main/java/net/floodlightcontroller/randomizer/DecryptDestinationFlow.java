@@ -52,20 +52,22 @@ public class DecryptDestinationFlow extends AbstractFlow {
                 .setHardTimeout(hardtimeout)
                 .setIdleTimeout(idletimeout)
                 .setPriority(flowpriority)
-                .setMatch(createMatches(server, factory))
-                .setActions(createActions(server, factory))
+                .setMatch(match)
+                .setActions(action)
                 //.setTableId(TableId.of(1))
                 .build();
     }
 
     private OFFlowAdd createFlowAdd(Server server, OFFactory factory) {
+        this.match = createMatches(server, factory);
+        this.action = createActions(server, factory);
         return factory.buildFlowAdd()
                 .setBufferId(OFBufferId.NO_BUFFER)
                 .setHardTimeout(hardtimeout)
                 .setIdleTimeout(idletimeout)
                 .setPriority(flowpriority)
-                .setMatch(createMatches(server, factory))
-                .setActions(createActions(server, factory))
+                .setMatch(match)
+                .setActions(action)
                 //.setTableId(TableId.of(1))
                 .build();
     }
