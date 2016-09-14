@@ -6,18 +6,23 @@ import org.projectfloodlight.openflow.types.OFPort;
 /**
  * Created by geddingsbarrineau on 9/14/16.
  */
-public class RandomSideConnection {
+public class Connection {
 
     Server server;
-    EncryptSourceFlow encryptflow;
-    DecryptDestinationFlow decryptflow;
-    DecryptDestinationFlow decryptflowprev;
-    DecryptDestinationFlow decryptflownext;
+    AbstractFlow encryptflow;
+    AbstractFlow decryptflow;
+    AbstractFlow decryptflowprev;
+    AbstractFlow decryptflownext;
 
-    public RandomSideConnection(Server server, DatapathId sw, OFPort wanport, OFPort hostport) {
+    public Connection(Server server, DatapathId sw, OFPort wanport, OFPort hostport, Boolean isRandomSide) {
         this.server = server;
-        encryptflow = new EncryptSourceFlow(wanport, hostport, sw);
-        decryptflow = new DecryptDestinationFlow(wanport, hostport, sw);
+        if (isRandomSide) {
+            encryptflow = new EncryptSourceFlow(wanport, hostport, sw);
+            decryptflow = new DecryptDestinationFlow(wanport, hostport, sw);
+        } else {
+            encryptflow = new EncryptDestinationFlow(wanport, hostport, sw);
+            decryptflow = new DecryptSourceFlow(wanport, hostport, sw);
+        }
         encryptflow.insertFlow(server);
         decryptflow.insertFlow(server);
     }
@@ -33,7 +38,7 @@ public class RandomSideConnection {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        RandomSideConnection that = (RandomSideConnection) o;
+        Connection that = (Connection) o;
 
         return server != null ? server.equals(that.server) : that.server == null;
 
