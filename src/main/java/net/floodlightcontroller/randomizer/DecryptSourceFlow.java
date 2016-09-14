@@ -20,15 +20,15 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 
 /**
- * Created by geddingsbarrineau on 9/13/16.
+ * Created by geddingsbarrineau on 9/14/16.
  */
-public class EncryptDestinationFlow extends AbstractFlow {
+public class DecryptSourceFlow extends AbstractFlow {
 
     private static Logger log;
 
-    public EncryptDestinationFlow(OFPort wanport, OFPort hostport, DatapathId dpid) {
+    public DecryptSourceFlow(OFPort wanport, OFPort hostport, DatapathId dpid) {
         super(wanport, hostport, dpid);
-        log = LoggerFactory.getLogger(EncryptDestinationFlow.class);
+        log = LoggerFactory.getLogger(DecryptSourceFlow.class);
     }
 
     @Override
@@ -54,7 +54,7 @@ public class EncryptDestinationFlow extends AbstractFlow {
         return factory.buildMatch()
                 //.setExact(MatchField.IN_PORT, inPort)
                 .setExact(MatchField.ETH_TYPE, EthType.IPv4)
-                .setExact(MatchField.IPV4_DST, server.getiPv4AddressReal())
+                .setExact(MatchField.IPV4_SRC, server.getiPv4AddressFake())
                 .build();
     }
 
@@ -64,19 +64,19 @@ public class EncryptDestinationFlow extends AbstractFlow {
         OFOxms oxms = factory.oxms();
 
                 /* Use OXM to modify network layer dest field. */
-        OFActionSetField setNwDst = actions.buildSetField()
+        OFActionSetField setNwSrc = actions.buildSetField()
                 .setField(
-                        oxms.buildIpv4Dst()
-                                .setValue(server.getiPv4AddressFake())
+                        oxms.buildIpv4Src()
+                                .setValue(server.getiPv4AddressReal())
                                 .build()
                 )
                 .build();
-        actionList.add(setNwDst);
+        actionList.add(setNwSrc);
 
                 /* Output to a port is also an OFAction, not an OXM. */
         OFActionOutput output = actions.buildOutput()
                 .setMaxLen(0xFFffFFff)
-                .setPort(wanport)
+                .setPort(hostport)
                 .build();
         actionList.add(output);
         return actionList;

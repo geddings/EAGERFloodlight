@@ -10,6 +10,7 @@ import org.projectfloodlight.openflow.protocol.action.OFActions;
 import org.projectfloodlight.openflow.protocol.match.Match;
 import org.projectfloodlight.openflow.protocol.match.MatchField;
 import org.projectfloodlight.openflow.protocol.oxm.OFOxms;
+import org.projectfloodlight.openflow.types.DatapathId;
 import org.projectfloodlight.openflow.types.EthType;
 import org.projectfloodlight.openflow.types.OFBufferId;
 import org.projectfloodlight.openflow.types.OFPort;
@@ -25,8 +26,8 @@ public class EncryptSourceFlow extends AbstractFlow {
 
     private static Logger log;
 
-    public EncryptSourceFlow(OFPort wanport, OFPort hostport) {
-        super(wanport, hostport);
+    public EncryptSourceFlow(OFPort wanport, OFPort hostport, DatapathId dpid) {
+        super(wanport, hostport, dpid);
         log = LoggerFactory.getLogger(EncryptSourceFlow.class);
     }
 

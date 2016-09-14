@@ -21,9 +21,10 @@ abstract class AbstractFlow {
     int idletimeout = 30;
     int flowpriority = 32768;
 
-    public AbstractFlow(OFPort wanport, OFPort hostport) {
+    public AbstractFlow(OFPort wanport, OFPort hostport, DatapathId dpid) {
         this.wanport = wanport;
         this.hostport = hostport;
+        this.dpid = dpid;
         log = LoggerFactory.getLogger(AbstractFlow.class);
     }
 
