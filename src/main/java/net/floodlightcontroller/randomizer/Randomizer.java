@@ -53,6 +53,9 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
     protected Map<IPv4Address, IPv4Address> randomizedServerList;
 
     private List<Server> serverList;
+    private List<Connection> connections;
+
+    private ServerManager serverManager;
 
     private static boolean LOCAL_HOST_IS_RANDOMIZED = false;
 
@@ -566,6 +569,9 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
 
         serverList = new ArrayList<>();
         serverList.add(new Server.ServerBuilder().setiPv4AddressReal(IPv4Address.of(10,0,0,4)).createServer());
+
+        serverManager = new ServerManager();
+        serverManager.addServer(new Server.ServerBuilder().setiPv4AddressReal(IPv4Address.of(10,0,0,4)).createServer());
     }
 
     @Override
