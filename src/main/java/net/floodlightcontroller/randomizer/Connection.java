@@ -13,10 +13,12 @@ public class Connection {
     AbstractFlow decryptflow;
     AbstractFlow decryptflowprev;
     AbstractFlow decryptflownext;
+    ArpFlows arpflows = null;
 
     public Connection(Server server, DatapathId sw, OFPort wanport, OFPort hostport, Boolean isRandomSide) {
         this.server = server;
         if (isRandomSide) {
+            arpflows = new ArpFlows(wanport, hostport, sw);
             encryptflow = new EncryptSourceFlow(wanport, hostport, sw);
             decryptflow = new DecryptDestinationFlow(wanport, hostport, sw);
         } else {
@@ -28,6 +30,7 @@ public class Connection {
     }
 
     public void update() {
+        if (arpflows != null) arpflows.insertFlow(server);
         encryptflow.removeFlow(server);
         encryptflow.insertFlow(server);
         decryptflow.insertFlow(server);
