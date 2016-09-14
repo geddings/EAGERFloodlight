@@ -66,91 +66,6 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
 
     //================================================================================
     //region Helper Functions
-    private void insertArpReplyEncryptFlow(IOFSwitch sw, ARP arp, OFPort out) {
-        OFFactory factory = sw.getOFFactory();
-
-        Match match = factory.buildMatch()
-                //.setExact(MatchField.IN_PORT, inPort)
-                .setExact(MatchField.ETH_TYPE, EthType.ARP)
-                .setExact(MatchField.ARP_SPA, (IPv4Address)getKeyFromValue(randomizedServerList, arp.getTargetProtocolAddress()))
-                .build();
-
-        ArrayList<OFAction> actionList = new ArrayList<>();
-        OFActions actions = factory.actions();
-        OFOxms oxms = factory.oxms();
-
-                /* Use OXM to modify network layer dest field. */
-        OFActionSetField setArpSpa = actions.buildSetField()
-                .setField(
-                        oxms.buildArpSpa()
-                                .setValue(arp.getTargetProtocolAddress())
-                                .build()
-                )
-                .build();
-        actionList.add(setArpSpa);
-
-                /* Output to a port is also an OFAction, not an OXM. */
-        OFActionOutput output = actions.buildOutput()
-                .setMaxLen(0xFFffFFff)
-                .setPort(out)
-                .build();
-        actionList.add(output);
-
-        OFFlowAdd flowAdd = factory.buildFlowAdd()
-                .setBufferId(OFBufferId.NO_BUFFER)
-                .setHardTimeout(30)
-                .setIdleTimeout(30)
-                .setPriority(32768)
-                .setMatch(match)
-                .setActions(actionList)
-                //.setTableId(TableId.of(1))
-                .build();
-
-        sw.write(flowAdd);
-    }
-
-    private void insertArpRequestDecryptFlow(IOFSwitch sw, ARP arp, OFPort out) {
-        OFFactory factory = sw.getOFFactory();
-
-        Match match = factory.buildMatch()
-                //.setExact(MatchField.IN_PORT, inPort)
-                .setExact(MatchField.ETH_TYPE, EthType.ARP)
-                .setExact(MatchField.ARP_TPA, arp.getTargetProtocolAddress())
-                .build();
-
-        ArrayList<OFAction> actionList = new ArrayList<>();
-        OFActions actions = factory.actions();
-        OFOxms oxms = factory.oxms();
-
-                /* Use OXM to modify network layer dest field. */
-        OFActionSetField setArpTpa = actions.buildSetField()
-                .setField(
-                        oxms.buildArpTpa()
-                                .setValue((IPv4Address)getKeyFromValue(randomizedServerList, arp.getTargetProtocolAddress()))
-                                .build()
-                )
-                .build();
-        actionList.add(setArpTpa);
-
-                /* Output to a port is also an OFAction, not an OXM. */
-        OFActionOutput output = actions.buildOutput()
-                .setMaxLen(0xFFffFFff)
-                .setPort(out)
-                .build();
-        actionList.add(output);
-
-        OFFlowAdd flowAdd = factory.buildFlowAdd()
-                .setBufferId(OFBufferId.NO_BUFFER)
-                .setHardTimeout(30)
-                .setIdleTimeout(30)
-                .setPriority(32768)
-                .setMatch(match)
-                .setActions(actionList)
-                //.setTableId(TableId.of(1))
-                .build();
-
-        sw.write(flowAdd);
-    }
 
     private void insertDestinationEncryptFlow(IOFSwitch sw, IPv4 l3, OFPort out) {
         OFFactory factory = sw.getOFFactory();
@@ -435,6 +350,29 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
         Ethernet l2 = IFloodlightProviderService.bcStore.get(cntx, IFloodlightProviderService.CONTEXT_PI_PAYLOAD);
         if (l2.getEtherType() == EthType.IPv4) {
             IPv4 l3 = (IPv4) l2.getPayload();
+
+            Server server;
+            if ((server = serverManager.getServer(l3.getSourceAddress())) != null) {
+                log.info("New server added from source IPv4 address...");
+            }
+            else if ((server = serverManager.getServer(l3.getDestinationAddress())) != null) {
+                log.info("New server added from destination IPv4 address...");
+            }
+            else {
+                log.info("Neither source nor destination IPv4 addresses matches a server. Continuing...");
+                return Command.CONTINUE;
+            }
+
+            for (Connection c : connections) {
+                if (c.getServer().equals(server)) {
+                    log.info("ERROR! Received packet that belongs to an existing connection...");
+                    return Command.STOP;
+                }
+            }
+            connections.add(new Connection(server, sw.getId(), wanport, hostport, LOCAL_HOST_IS_RANDOMIZED));
+            return Command.STOP;
+
+            /*
             // Is the local host supposed to be randomized? (Defined in the properties file)
             if (LOCAL_HOST_IS_RANDOMIZED) {
                 log.info("IPv4 packet seen on Randomized host. \nSrc:{}\nDst:{}\nInPort:{}", new Object[] {l3.getSourceAddress(), l3.getDestinationAddress(),
@@ -477,18 +415,9 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
                     }
                     return Command.STOP;
                 }
-            }
+            } */
         }
-        else if (l2.getEtherType() == EthType.ARP) {
-            ARP arp = (ARP) l2.getPayload();
-            if (LOCAL_HOST_IS_RANDOMIZED) {
-                log.info("ARP packet seen on Randomized host. Inserting ARP flows...");
-                if (randomizedServerList.containsValue(arp.getTargetProtocolAddress())) {
-                    insertArpRequestDecryptFlow(sw, arp, OFPort.of(1)); // Port should be facing the host.
-                    insertArpReplyEncryptFlow(sw, arp, OFPort.of(2)); // Port should be facing the BGP router.
-                }
-            }
-        }
+
         return Command.CONTINUE;
     }
 

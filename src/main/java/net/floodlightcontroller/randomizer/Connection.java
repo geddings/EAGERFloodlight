@@ -36,6 +36,10 @@ public class Connection {
         decryptflow.insertFlow(server);
     }
 
+    public Server getServer() {
+        return server;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
