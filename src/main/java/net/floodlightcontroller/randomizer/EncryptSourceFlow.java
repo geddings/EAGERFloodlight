@@ -19,15 +19,15 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 
 /**
- * Created by geddingsbarrineau on 9/13/16.
+ * Created by geddingsbarrineau on 9/14/16.
  */
-public class EncryptDestinationFlow extends AbstractFlow {
+public class EncryptSourceFlow extends AbstractFlow {
 
     private static Logger log;
 
-    public EncryptDestinationFlow(OFPort wanport, OFPort hostport) {
+    public EncryptSourceFlow(OFPort wanport, OFPort hostport) {
         super(wanport, hostport);
-        log = LoggerFactory.getLogger(EncryptDestinationFlow.class);
+        log = LoggerFactory.getLogger(EncryptSourceFlow.class);
     }
 
     @Override
@@ -53,7 +53,7 @@ public class EncryptDestinationFlow extends AbstractFlow {
         return factory.buildMatch()
                 //.setExact(MatchField.IN_PORT, inPort)
                 .setExact(MatchField.ETH_TYPE, EthType.IPv4)
-                .setExact(MatchField.IPV4_DST, server.getiPv4AddressReal())
+                .setExact(MatchField.IPV4_SRC, server.getiPv4AddressReal())
                 .build();
     }
 
@@ -63,14 +63,14 @@ public class EncryptDestinationFlow extends AbstractFlow {
         OFOxms oxms = factory.oxms();
 
                 /* Use OXM to modify network layer dest field. */
-        OFActionSetField setNwDst = actions.buildSetField()
+        OFActionSetField setNwSrc = actions.buildSetField()
                 .setField(
-                        oxms.buildIpv4Dst()
+                        oxms.buildIpv4Src()
                                 .setValue(server.getiPv4AddressFake())
                                 .build()
                 )
                 .build();
-        actionList.add(setNwDst);
+        actionList.add(setNwSrc);
 
                 /* Output to a port is also an OFAction, not an OXM. */
         OFActionOutput output = actions.buildOutput()

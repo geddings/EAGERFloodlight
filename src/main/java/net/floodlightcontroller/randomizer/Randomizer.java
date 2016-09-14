@@ -42,7 +42,7 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
     private ScheduledExecutorService executorService;
     private IDeviceService deviceService;
     private IFloodlightProviderService floodlightProvider;
-    private IOFSwitchService switchService;
+    protected static IOFSwitchService switchService;
     private IStaticEntryPusherService staticEntryPusherService;
     private static Logger log;
     private static Random generator;
