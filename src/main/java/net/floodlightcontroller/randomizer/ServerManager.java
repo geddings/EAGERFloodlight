@@ -18,7 +18,7 @@ public class ServerManager {
     }
 
     public void updateServers() {
-
+        serverList.forEach(Server::update);
     }
 
     public void addServer(Server server) {

@@ -13,20 +13,13 @@ import net.floodlightcontroller.packet.ARP;
 import net.floodlightcontroller.packet.Ethernet;
 import net.floodlightcontroller.packet.IPacket;
 import net.floodlightcontroller.packet.IPv4;
-import net.floodlightcontroller.staticentry.IStaticEntryPusherService;
 import org.projectfloodlight.openflow.protocol.*;
 import org.projectfloodlight.openflow.protocol.action.OFAction;
-import org.projectfloodlight.openflow.protocol.action.OFActionOutput;
-import org.projectfloodlight.openflow.protocol.action.OFActionSetField;
-import org.projectfloodlight.openflow.protocol.action.OFActions;
-import org.projectfloodlight.openflow.protocol.match.Match;
 import org.projectfloodlight.openflow.protocol.match.MatchField;
-import org.projectfloodlight.openflow.protocol.oxm.OFOxms;
 import org.projectfloodlight.openflow.types.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -43,208 +36,19 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
     private IDeviceService deviceService;
     private IFloodlightProviderService floodlightProvider;
     protected static IOFSwitchService switchService;
-    private IStaticEntryPusherService staticEntryPusherService;
     private static Logger log;
-    private static Random generator;
 
-    private List<IPv4Address> whiteListedHostsIPv4;
-    private List<IPv6Address> whiteListedHostsIPv6;
-
-    protected Map<IPv4Address, IPv4Address> randomizedServerList;
-
-    private List<Server> serverList;
     private List<Connection> connections;
-
     private ServerManager serverManager;
 
     private static boolean LOCAL_HOST_IS_RANDOMIZED = false;
 
-    private int SEED = 1234;
     //endregion
     //================================================================================
 
 
     //================================================================================
     //region Helper Functions
-
-    private void insertDestinationEncryptFlow(IOFSwitch sw, IPv4 l3, OFPort out) {
-        OFFactory factory = sw.getOFFactory();
-
-        Match match = factory.buildMatch()
-                //.setExact(MatchField.IN_PORT, inPort)
-                .setExact(MatchField.ETH_TYPE, EthType.IPv4)
-                .setExact(MatchField.IPV4_DST, l3.getDestinationAddress())
-                .build();
-
-        ArrayList<OFAction> actionList = new ArrayList<>();
-        OFActions actions = factory.actions();
-        OFOxms oxms = factory.oxms();
-
-                /* Use OXM to modify network layer dest field. */
-        OFActionSetField setNwDst = actions.buildSetField()
-                .setField(
-                        oxms.buildIpv4Dst()
-                                .setValue(randomizedServerList.get(l3.getDestinationAddress()))
-                                .build()
-                )
-                .build();
-        actionList.add(setNwDst);
-
-                /* Output to a port is also an OFAction, not an OXM. */
-        OFActionOutput output = actions.buildOutput()
-                .setMaxLen(0xFFffFFff)
-                .setPort(out)
-                .build();
-        actionList.add(output);
-
-        OFFlowAdd flowAdd = factory.buildFlowAdd()
-                .setBufferId(OFBufferId.NO_BUFFER)
-                .setHardTimeout(30)
-                .setIdleTimeout(30)
-                .setPriority(32768)
-                .setMatch(match)
-                .setActions(actionList)
-                //.setTableId(TableId.of(1))
-                .build();
-
-        sw.write(flowAdd);
-    }
-
-    private void insertDestinationDecryptFlow(IOFSwitch sw, IPv4 l3, OFPort out) {
-        OFFactory factory = sw.getOFFactory();
-
-        Match match = factory.buildMatch()
-                //.setExact(MatchField.IN_PORT, inPort)
-                .setExact(MatchField.ETH_TYPE, EthType.IPv4)
-                .setExact(MatchField.IPV4_DST, l3.getDestinationAddress()) //TODO Pull this from a map
-                .build();
-
-        ArrayList<OFAction> actionList = new ArrayList<>();
-        OFActions actions = factory.actions();
-        OFOxms oxms = factory.oxms();
-
-                /* Use OXM to modify network layer dest field. */
-        OFActionSetField setNwDst = actions.buildSetField()
-                .setField(
-                        oxms.buildIpv4Dst()
-                                .setValue((IPv4Address)getKeyFromValue(randomizedServerList, l3.getDestinationAddress())) // TODO Pull this from a map? Maybe have hardcoded value
-                                .build()
-                )
-                .build();
-        actionList.add(setNwDst);
-
-                /* Output to a port is also an OFAction, not an OXM. */
-        OFActionOutput output = actions.buildOutput()
-                .setMaxLen(0xFFffFFff)
-                .setPort(out)
-                .build();
-        actionList.add(output);
-
-        OFFlowAdd flowAdd = factory.buildFlowAdd()
-                .setBufferId(OFBufferId.NO_BUFFER)
-                .setHardTimeout(30)
-                .setIdleTimeout(30)
-                .setPriority(32768)
-                .setMatch(match)
-                .setActions(actionList)
-                //.setTableId(TableId.of(1))
-                .build();
-
-        sw.write(flowAdd);}
-
-    private void insertSourceEncryptFlow(IOFSwitch sw, IPv4 l3, OFPort out) {
-        OFFactory factory = sw.getOFFactory();
-
-        Match match = factory.buildMatch()
-                //.setExact(MatchField.IN_PORT, inPort)
-                .setExact(MatchField.ETH_TYPE, EthType.IPv4)
-                .setExact(MatchField.IPV4_SRC, l3.getSourceAddress())
-                .build();
-
-        ArrayList<OFAction> actionList = new ArrayList<>();
-        OFActions actions = factory.actions();
-        OFOxms oxms = factory.oxms();
-
-                /* Use OXM to modify network layer dest field. */
-        OFActionSetField setNwSrc = actions.buildSetField()
-                .setField(
-                        oxms.buildIpv4Src()
-                                .setValue(randomizedServerList.get(l3.getSourceAddress()))
-                                .build()
-                )
-                .build();
-        actionList.add(setNwSrc);
-
-                /* Output to a port is also an OFAction, not an OXM. */
-        OFActionOutput output = actions.buildOutput()
-                .setMaxLen(0xFFffFFff)
-                .setPort(out)
-                .build();
-        actionList.add(output);
-
-        OFFlowAdd flowAdd = factory.buildFlowAdd()
-                .setBufferId(OFBufferId.NO_BUFFER)
-                .setHardTimeout(30)
-                .setIdleTimeout(30)
-                .setPriority(32768)
-                .setMatch(match)
-                .setActions(actionList)
-                //.setTableId(TableId.of(1))
-                .build();
-
-        sw.write(flowAdd);}
-
-    private void insertSourceDecryptFlow(IOFSwitch sw, IPv4 l3, OFPort out) {
-        OFFactory factory = sw.getOFFactory();
-
-        Match match = factory.buildMatch()
-                //.setExact(MatchField.IN_PORT, inPort)
-                .setExact(MatchField.ETH_TYPE, EthType.IPv4)
-                .setExact(MatchField.IPV4_SRC, l3.getSourceAddress())
-                .build();
-
-        ArrayList<OFAction> actionList = new ArrayList<>();
-        OFActions actions = factory.actions();
-        OFOxms oxms = factory.oxms();
-
-                /* Use OXM to modify network layer dest field. */
-        OFActionSetField setNwSrc = actions.buildSetField()
-                .setField(
-                        oxms.buildIpv4Src()
-                                .setValue((IPv4Address)getKeyFromValue(randomizedServerList, l3.getSourceAddress())) // TODO Check for null
-                                .build()
-                )
-                .build();
-        actionList.add(setNwSrc);
-
-                /* Output to a port is also an OFAction, not an OXM. */
-        OFActionOutput output = actions.buildOutput()
-                .setMaxLen(0xFFffFFff)
-                .setPort(out)
-                .build();
-        actionList.add(output);
-
-        OFFlowAdd flowAdd = factory.buildFlowAdd()
-                .setBufferId(OFBufferId.NO_BUFFER)
-                .setHardTimeout(30)
-                .setIdleTimeout(30)
-                .setPriority(32768)
-                .setMatch(match)
-                .setActions(actionList)
-                //.setTableId(TableId.of(1))
-                .build();
-
-        sw.write(flowAdd);}
-
-    private IPv4Address generateRandomIPv4Address() {
-        int minutes = LocalDateTime.now().getMinute();
-        int seconds = LocalDateTime.now().getSecond();
-        return IPv4Address.of(10, 0, 0, minutes);
-    }
-
-    private IPv6Address generateRandomIPv6Address() {
-        return IPv6Address.of(new Random().nextLong(), new Random().nextLong());
-    }
 
     private  void findHostIPv4(IPv4Address ipaddr) {
         Set<DatapathId> switches = switchService.getAllSwitchDpids();
@@ -262,19 +66,10 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
         }
     }
 
-    private void findHostIPv6() {}
-
     private void startTest() {
-        executorService.scheduleAtFixedRate((Runnable) () -> {
-            //randomizedServerList.put(IPv4Address.of(10,0,0,4), IPv4Address.of(generator.nextInt()));
-            randomizedServerList.put(IPv4Address.of(10,0,0,4), generateRandomIPv4Address());
-            log.info("{}", randomizedServerList);
-            //findHostIPv4(IPv4Address.of(10, 0, 0, 3));
-            //log.info("{}", deviceService.queryDevices(MacAddress.NONE, null, IPv4Address.of(10,0,0,3), IPv6Address.NONE, DatapathId.NONE, OFPort.ZERO).hasNext());
+        executorService.scheduleAtFixedRate(() -> {
+           serverManager.updateServers();
         }, 0L, 30L, TimeUnit.SECONDS);
-
-        whiteListedHostsIPv4.add(IPv4Address.of(10, 0, 0, 2));
-
     }
 
     public static Object getKeyFromValue(Map hm, Object value) {
@@ -352,12 +147,21 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
             IPv4 l3 = (IPv4) l2.getPayload();
 
             Server server;
-            if ((server = serverManager.getServer(l3.getSourceAddress())) != null) {
-                log.info("New server added from source IPv4 address...");
+            OFPort wanport;
+            OFPort hostport;
+            /* Packet is coming from client to the servers fake IP on the randomized side*/
+            if ((server = serverManager.getServerFake(l3.getDestinationAddress())) != null) {
+                log.info("Packet destined for a randomized server's fake IP found...");
+                wanport = inPort;
+                hostport = OFPort.of(2); //TODO This needs to be set by the REST API or the properties file
             }
+            /* Packet is coming from the non-randomized client side (probably initiation) */
             else if ((server = serverManager.getServer(l3.getDestinationAddress())) != null) {
-                log.info("New server added from destination IPv4 address...");
+                log.info("Packet destined for a randomized server's real IP found...");
+                hostport = inPort;
+                wanport = OFPort.of(2); //TODO This needs to be set by the REST API or the properties file
             }
+            /* Packet is unrelated to any randomized server connection */
             else {
                 log.info("Neither source nor destination IPv4 addresses matches a server. Continuing...");
                 return Command.CONTINUE;
@@ -372,6 +176,7 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
             connections.add(new Connection(server, sw.getId(), wanport, hostport, LOCAL_HOST_IS_RANDOMIZED));
             return Command.STOP;
 
+            //region Old receive implementation
             /*
             // Is the local host supposed to be randomized? (Defined in the properties file)
             if (LOCAL_HOST_IS_RANDOMIZED) {
@@ -416,6 +221,7 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
                     return Command.STOP;
                 }
             } */
+            //endregion
         }
 
         return Command.CONTINUE;
@@ -471,9 +277,7 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
         deviceService = context.getServiceImpl(IDeviceService.class);
         floodlightProvider = context.getServiceImpl(IFloodlightProviderService.class);
         switchService = context.getServiceImpl(IOFSwitchService.class);
-        staticEntryPusherService = context.getServiceImpl(IStaticEntryPusherService.class);
         log = LoggerFactory.getLogger(Randomizer.class);
-        generator = new Random(SEED);
 
         Map<String, String> configParameters = context.getConfigParams(this);
         String tmp = configParameters.get("randomize-host");
@@ -489,18 +293,11 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
             }
         }
 
-
-        whiteListedHostsIPv4 = new ArrayList<>();
-        whiteListedHostsIPv6 = new ArrayList<>();
-
-        randomizedServerList = new HashMap<>();
-        randomizedServerList.put(IPv4Address.of(10,0,0,4), IPv4Address.of(20,0,0,4));
-
-        serverList = new ArrayList<>();
-        serverList.add(new Server.ServerBuilder().setiPv4AddressReal(IPv4Address.of(10,0,0,4)).createServer());
-
+        connections = new ArrayList<Connection>();
         serverManager = new ServerManager();
-        serverManager.addServer(new Server.ServerBuilder().setiPv4AddressReal(IPv4Address.of(10,0,0,4)).createServer());
+
+        /* Add servers here */
+        serverManager.addServer(new Server(IPv4Address.of(10,0,0,4), 1234));
     }
 
     @Override

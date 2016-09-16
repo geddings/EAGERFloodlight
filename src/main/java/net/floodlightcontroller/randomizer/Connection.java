@@ -17,7 +17,7 @@ public class Connection {
 
     public Connection(Server server, DatapathId sw, OFPort wanport, OFPort hostport, Boolean isRandomSide) {
         this.server = server;
-        if (isRandomSide) {
+        if (isRandomSide) {     //Todo install flows immediately
             arpflows = new ArpFlows(wanport, hostport, sw);
             encryptflow = new EncryptSourceFlow(wanport, hostport, sw);
             decryptflow = new DecryptDestinationFlow(wanport, hostport, sw);

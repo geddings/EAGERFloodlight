@@ -38,7 +38,7 @@ public class ArpFlows extends AbstractFlow {
     }
 
     private static class ArpReplyEncrypt {
-        public static void insertFlow(Server server, IOFSwitch sw, OFPort out) {
+        static void insertFlow(Server server, IOFSwitch sw, OFPort out) {
             OFFactory factory = sw.getOFFactory();
 
             Match match = factory.buildMatch()
@@ -83,7 +83,7 @@ public class ArpFlows extends AbstractFlow {
     }
 
     private static class ArpRequestDecrypt {
-        public static void insertFlow(Server server, IOFSwitch sw, OFPort out) {
+        static void insertFlow(Server server, IOFSwitch sw, OFPort out) {
             OFFactory factory = sw.getOFFactory();
 
             Match match = factory.buildMatch()
