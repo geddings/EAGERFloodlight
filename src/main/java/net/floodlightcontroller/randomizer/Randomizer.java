@@ -28,7 +28,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Created by geddingsbarrineau on 7/14/16.
  */
-public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFloodlightModule {
+public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFloodlightModule, IRandomizerService {
 
     //================================================================================
     //region Properties
@@ -254,12 +254,16 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
     //region IFloodlightModule Implementation
     @Override
     public Collection<Class<? extends IFloodlightService>> getModuleServices() {
-        return null;
+        Collection<Class<? extends IFloodlightService>> s = new HashSet<>();
+        s.add(IRandomizerService.class);
+        return s;
     }
 
     @Override
     public Map<Class<? extends IFloodlightService>, IFloodlightService> getServiceImpls() {
-        return null;
+        Map<Class<? extends IFloodlightService>, IFloodlightService> m = new HashMap<>();
+        m.put(IRandomizerService.class, this);
+        return m;
     }
 
     @Override
