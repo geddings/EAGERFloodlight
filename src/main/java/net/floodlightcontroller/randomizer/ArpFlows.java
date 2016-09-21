@@ -20,8 +20,8 @@ import java.util.ArrayList;
  */
 public class ArpFlows extends AbstractFlow {
 
-    public ArpFlows(OFPort wanport, OFPort hostport, DatapathId dpid) {
-        super(wanport, hostport, dpid);
+    public ArpFlows(OFPort wanport, OFPort localport, DatapathId dpid) {
+        super(wanport, localport, dpid);
         log = LoggerFactory.getLogger(ArpFlows.class);
     }
 
@@ -29,7 +29,7 @@ public class ArpFlows extends AbstractFlow {
     public void insertFlow(Server server) {
         IOFSwitch sw = Randomizer.switchService.getActiveSwitch(dpid);
         ArpReplyEncrypt.insertFlow(server, sw, wanport);
-        ArpRequestDecrypt.insertFlow(server, sw, hostport);
+        ArpRequestDecrypt.insertFlow(server, sw, localport);
     }
 
     @Override

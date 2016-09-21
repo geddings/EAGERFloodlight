@@ -13,6 +13,8 @@ import net.floodlightcontroller.packet.ARP;
 import net.floodlightcontroller.packet.Ethernet;
 import net.floodlightcontroller.packet.IPacket;
 import net.floodlightcontroller.packet.IPv4;
+import net.floodlightcontroller.randomizer.web.RandomizerWebRoutable;
+import net.floodlightcontroller.restserver.IRestApiService;
 import org.projectfloodlight.openflow.protocol.*;
 import org.projectfloodlight.openflow.protocol.action.OFAction;
 import org.projectfloodlight.openflow.protocol.match.MatchField;
@@ -35,13 +37,17 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
     private ScheduledExecutorService executorService;
     private IDeviceService deviceService;
     private IFloodlightProviderService floodlightProvider;
+    private IRestApiService restApiService;
     protected static IOFSwitchService switchService;
     private static Logger log;
 
     private List<Connection> connections;
     private ServerManager serverManager;
 
-    private static boolean LOCAL_HOST_IS_RANDOMIZED = false;
+    private static boolean enabled;
+    private static boolean randomize;
+    private static OFPort localport;
+    private static OFPort wanport;
 
     //endregion
     //================================================================================
@@ -135,11 +141,89 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
     //endregion
     //================================================================================
 
+    //================================================================================
+    //region IRandomizerService Implementation
+
+    @Override
+    public boolean isEnabled() {
+        return enabled;
+    }
+
+    @Override
+    public RandomizerReturnCode enable() {
+        log.warn("Enabling Randomizer");
+        enabled = true;
+        return RandomizerReturnCode.ENABLED;
+    }
+
+    @Override
+    public RandomizerReturnCode disable() {
+        log.warn("Disabling Randomizer");
+        enabled = false;
+        return RandomizerReturnCode.DISABLED;
+    }
+
+    @Override
+    public boolean isRandom() {
+        return randomize;
+    }
+
+    @Override
+    public RandomizerReturnCode setRandom(Boolean random) {
+        randomize = random;
+        log.warn("Set randomize to {}", random);
+        return RandomizerReturnCode.CONFIG_SET;
+    }
+
+    @Override
+    public OFPort getLocalPort() {
+        return localport;
+    }
+
+    @Override
+    public RandomizerReturnCode setLocalPort(int portnumber) {
+        localport = OFPort.of(portnumber);
+        log.warn("Set localport to {}", portnumber);
+        return RandomizerReturnCode.CONFIG_SET;
+    }
+
+    @Override
+    public OFPort getWanPort() {
+        return wanport;
+    }
+
+    @Override
+    public RandomizerReturnCode setWanPort(int portnumber) {
+        wanport = OFPort.of(portnumber);
+        log.warn("Set wanport to {}", portnumber);
+        return RandomizerReturnCode.CONFIG_SET;
+    }
+
+    @Override
+    public List<Server> getServers() {
+        return serverManager.getServers();
+    }
+
+    //endregion
+    //================================================================================
 
     //================================================================================
     //region IOFMessageListener Implementation
     @Override
     public Command receive(IOFSwitch sw, OFMessage msg, FloodlightContext cntx) {
+        /*
+		 * If we're disabled, then just stop now
+		 * and let Forwarding/Hub handle the connection.
+		 */
+        if (!enabled) {
+            log.trace("Randomizer disabled. Not acting on packet; passing to next module.");
+            return Command.CONTINUE;
+        } else {
+			/*
+			 * Randomizer is enabled; proceed
+			 */
+            log.trace("Randomizer enabled. Inspecting packet to see if it's a candidate for randomization.");
+        }
         OFPacketIn pi = (OFPacketIn) msg;
         OFPort inPort = (pi.getVersion().compareTo(OFVersion.OF_12) < 0 ? pi.getInPort() : pi.getMatch().get(MatchField.IN_PORT));
         Ethernet l2 = IFloodlightProviderService.bcStore.get(cntx, IFloodlightProviderService.CONTEXT_PI_PAYLOAD);
@@ -147,19 +231,13 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
             IPv4 l3 = (IPv4) l2.getPayload();
 
             Server server;
-            OFPort wanport;
-            OFPort hostport;
             /* Packet is coming from client to the servers fake IP on the randomized side*/
             if ((server = serverManager.getServerFake(l3.getDestinationAddress())) != null) {
                 log.info("Packet destined for a randomized server's fake IP found...");
-                wanport = inPort;
-                hostport = OFPort.of(2); //TODO This needs to be set by the REST API or the properties file
             }
             /* Packet is coming from the non-randomized client side (probably initiation) */
             else if ((server = serverManager.getServer(l3.getDestinationAddress())) != null) {
                 log.info("Packet destined for a randomized server's real IP found...");
-                hostport = inPort;
-                wanport = OFPort.of(2); //TODO This needs to be set by the REST API or the properties file
             }
             /* Packet is unrelated to any randomized server connection */
             else {
@@ -173,7 +251,7 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
                     return Command.STOP;
                 }
             }
-            connections.add(new Connection(server, sw.getId(), wanport, hostport, LOCAL_HOST_IS_RANDOMIZED));
+            connections.add(new Connection(server, sw.getId(), wanport, localport, randomize));
             return Command.STOP;
 
             //region Old receive implementation
@@ -184,10 +262,10 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
                         inPort});
                 // Is this packet part of the randomized connection?
                 // For randomized host, there are two things to look for:
-                // 1) Is the dst a random address in use currently? If so, a flow needs to be inserted.
+                // 1) Is the dst a randomize address in use currently? If so, a flow needs to be inserted.
                 // 2) Is the src a real server address? If so, a flow needs to be inserted.
                 if (randomizedServerList.containsValue(l3.getDestinationAddress())) {
-                    log.info("1. Packet is destined for a server's random address contained in the randomized server list.");
+                    log.info("1. Packet is destined for a server's randomize address contained in the randomized server list.");
                     SwitchPort[] aps = getAttachmentPointsForDevice((IPv4Address)getKeyFromValue(
                             randomizedServerList, l3.getDestinationAddress()), sw.getId());
                     if (aps != null) {
@@ -206,13 +284,13 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
                 // Is this packet part of the randomized connection?
                 // For non-randomized host, there are two things to look for:
                 // 1) Is the dst a real server address? If so, a flow needs to be inserted.
-                // 2) Is the src a random address in use currently? If so, a flow needs to be inserted.
+                // 2) Is the src a randomize address in use currently? If so, a flow needs to be inserted.
                 if (randomizedServerList.containsKey(l3.getDestinationAddress())) {
                     log.info("3. Packet is destined for a server's real address contained in the randomized server list.");
                     insertDestinationEncryptFlow(sw, l3, OFPort.of(2)); // This port should be the port that leads to the BGP router.
                     return Command.STOP;
                 } else if (randomizedServerList.containsValue(l3.getSourceAddress())) {
-                    log.info("4. Packet is coming from a server's random address contained in the randomized server list.");
+                    log.info("4. Packet is coming from a server's randomize address contained in the randomized server list.");
                     SwitchPort[] aps = getAttachmentPointsForDevice(l3.getDestinationAddress(), sw.getId());
                     if (aps != null) {
                         log.info("{}", aps);
@@ -280,22 +358,9 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
         executorService = Executors.newSingleThreadScheduledExecutor();
         deviceService = context.getServiceImpl(IDeviceService.class);
         floodlightProvider = context.getServiceImpl(IFloodlightProviderService.class);
+        restApiService = context.getServiceImpl(IRestApiService.class);
         switchService = context.getServiceImpl(IOFSwitchService.class);
         log = LoggerFactory.getLogger(Randomizer.class);
-
-        Map<String, String> configParameters = context.getConfigParams(this);
-        String tmp = configParameters.get("randomize-host");
-        log.info("tmp is {}", tmp);
-        if (tmp != null) {
-            tmp = tmp.trim().toLowerCase();
-            if (tmp.contains("yes") || tmp.contains("true")) {
-                LOCAL_HOST_IS_RANDOMIZED = true;
-                log.info("Local host will be treated as having randomized addresses.");
-            } else {
-                LOCAL_HOST_IS_RANDOMIZED = false;
-                log.info("Local host will be treated as having a static address.");
-            }
-        }
 
         connections = new ArrayList<Connection>();
         serverManager = new ServerManager();
@@ -308,8 +373,27 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
     public void startUp(FloodlightModuleContext context) throws FloodlightModuleException {
         floodlightProvider.addOFMessageListener(OFType.PACKET_IN, this);
         switchService.addOFSwitchListener(this);
-        startTest();
+        restApiService.addRestletRoutable(new RandomizerWebRoutable());
 
+        Map<String, String> configOptions = context.getConfigParams(this);
+        try {
+			/* These are defaults */
+			enabled = Boolean.parseBoolean(configOptions.get("enabled"));
+			randomize = Boolean.parseBoolean(configOptions.get("randomize"));
+			localport = OFPort.of(Integer.parseInt(configOptions.get("localport")));
+            wanport = OFPort.of(Integer.parseInt(configOptions.get("wanport")));
+
+        } catch (IllegalArgumentException | NullPointerException ex) {
+            log.error("Incorrect Randomizer configuration options. Required: 'enabled', 'randomize', 'localport', 'wanport'", ex);
+            throw ex;
+        }
+
+        if (log.isInfoEnabled()) {
+            log.info("Initial config options: enabled:{}, randomize:{}, localport:{}, wanport:{}",
+                    new Object[] { enabled, randomize, localport, wanport });
+        }
+
+        startTest();
     }
     //endregion
     //================================================================================

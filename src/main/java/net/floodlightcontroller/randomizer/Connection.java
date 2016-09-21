@@ -15,15 +15,15 @@ public class Connection {
     AbstractFlow decryptflownext;
     ArpFlows arpflows = null;
 
-    public Connection(Server server, DatapathId sw, OFPort wanport, OFPort hostport, Boolean isRandomSide) {
+    public Connection(Server server, DatapathId sw, OFPort wanport, OFPort localport, Boolean isRandomSide) {
         this.server = server;
         if (isRandomSide) {     //Todo install flows immediately
-            arpflows = new ArpFlows(wanport, hostport, sw);
-            encryptflow = new EncryptSourceFlow(wanport, hostport, sw);
-            decryptflow = new DecryptDestinationFlow(wanport, hostport, sw);
+            arpflows = new ArpFlows(wanport, localport, sw);
+            encryptflow = new EncryptSourceFlow(wanport, localport, sw);
+            decryptflow = new DecryptDestinationFlow(wanport, localport, sw);
         } else {
-            encryptflow = new EncryptDestinationFlow(wanport, hostport, sw);
-            decryptflow = new DecryptSourceFlow(wanport, hostport, sw);
+            encryptflow = new EncryptDestinationFlow(wanport, localport, sw);
+            decryptflow = new DecryptSourceFlow(wanport, localport, sw);
         }
         encryptflow.insertFlow(server);
         decryptflow.insertFlow(server);

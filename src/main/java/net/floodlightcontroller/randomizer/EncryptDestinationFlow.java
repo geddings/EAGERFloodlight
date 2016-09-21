@@ -27,8 +27,8 @@ public class EncryptDestinationFlow extends AbstractFlow {
 
     private static Logger log;
 
-    public EncryptDestinationFlow(OFPort wanport, OFPort hostport, DatapathId dpid) {
-        super(wanport, hostport, dpid);
+    public EncryptDestinationFlow(OFPort wanport, OFPort localport, DatapathId dpid) {
+        super(wanport, localport, dpid);
         log = LoggerFactory.getLogger(EncryptDestinationFlow.class);
     }
 

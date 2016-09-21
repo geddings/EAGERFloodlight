@@ -17,6 +17,10 @@ public class ServerManager {
         serverList = new ArrayList<Server>();
     }
 
+    public List<Server> getServers() {
+        return serverList;
+    }
+
     public void updateServers() {
         serverList.forEach(Server::update);
     }

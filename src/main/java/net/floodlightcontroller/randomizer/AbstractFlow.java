@@ -16,7 +16,7 @@ abstract class AbstractFlow {
 
     protected DatapathId dpid;
     OFPort wanport = OFPort.of(1);
-    OFPort hostport = OFPort.of(2);
+    OFPort localport = OFPort.of(2);
     //protected static boolean LOCAL_HOST_IS_RANDOMIZED = false;
     protected static Logger log;
 
@@ -27,9 +27,9 @@ abstract class AbstractFlow {
     int idletimeout = 30;
     int flowpriority = 32768;
 
-    public AbstractFlow(OFPort wanport, OFPort hostport, DatapathId dpid) {
+    public AbstractFlow(OFPort wanport, OFPort localport, DatapathId dpid) {
         this.wanport = wanport;
-        this.hostport = hostport;
+        this.localport = localport;
         this.dpid = dpid;
         log = LoggerFactory.getLogger(AbstractFlow.class);
     }

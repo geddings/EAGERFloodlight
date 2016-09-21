@@ -27,8 +27,8 @@ public class DecryptSourceFlow extends AbstractFlow {
 
     private static Logger log;
 
-    public DecryptSourceFlow(OFPort wanport, OFPort hostport, DatapathId dpid) {
-        super(wanport, hostport, dpid);
+    public DecryptSourceFlow(OFPort wanport, OFPort localport, DatapathId dpid) {
+        super(wanport, localport, dpid);
         log = LoggerFactory.getLogger(DecryptSourceFlow.class);
     }
 
@@ -98,7 +98,7 @@ public class DecryptSourceFlow extends AbstractFlow {
                 /* Output to a port is also an OFAction, not an OXM. */
         OFActionOutput output = actions.buildOutput()
                 .setMaxLen(0xFFffFFff)
-                .setPort(hostport)
+                .setPort(localport)
                 .build();
         actionList.add(output);
         return actionList;
