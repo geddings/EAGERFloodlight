@@ -2,18 +2,20 @@ package net.floodlightcontroller.randomizer;
 
 import org.projectfloodlight.openflow.types.DatapathId;
 import org.projectfloodlight.openflow.types.OFPort;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Created by geddingsbarrineau on 9/14/16.
+ *
+ * This is a connection object for the EAGER project.
  */
 public class Connection {
-
-    Server server;
-    AbstractFlow encryptflow;
-    AbstractFlow decryptflow;
-    AbstractFlow decryptflowprev;
-    AbstractFlow decryptflownext;
-    ArpFlows arpflows = null;
+    private static Logger log = LoggerFactory.getLogger(Connection.class);
+    private Server server;
+    private AbstractFlow encryptflow;
+    private AbstractFlow decryptflow;
+    private ArpFlows arpflows = null;
 
     public Connection(Server server, DatapathId sw, OFPort wanport, OFPort localport, Boolean isRandomSide) {
         this.server = server;
@@ -25,12 +27,15 @@ public class Connection {
             encryptflow = new EncryptDestinationFlow(wanport, localport, sw);
             decryptflow = new DecryptSourceFlow(wanport, localport, sw);
         }
+        log.info("Inserting encrypt and decrypt flows for a new connection!");
         encryptflow.insertFlow(server);
         decryptflow.insertFlow(server);
     }
 
     public void update() {
+        log.info("Removing encrypt and inserting encrypt and decrypt flows for an existing connection!");
         if (arpflows != null) arpflows.insertFlow(server);
+        log.info("{}", encryptflow);
         encryptflow.removeFlow(server);
         encryptflow.insertFlow(server);
         decryptflow.insertFlow(server);

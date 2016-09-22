@@ -7,59 +7,70 @@ import java.util.List;
 
 /**
  * Created by geddingsbarrineau on 9/19/16.
+ *
  */
 public interface IRandomizerService extends IFloodlightService {
 
     /**
      * Check if the Randomizer module is enabled.
+     *
      * @return True if enabled
      */
-    public boolean isEnabled();
+    boolean isEnabled();
 
     /**
      * Enable Randomizer module
+     *
      * @return enabled
      */
-    public RandomizerReturnCode enable();
+    RandomizerReturnCode enable();
 
     /**
      * Disable Randomizer module
+     *
      * @return disabled
      */
-    public RandomizerReturnCode disable();
+    RandomizerReturnCode disable();
 
     /**
      * Check if Floodlight is randomizing hosts.
+     *
      * @return True if hosts are randomized, else False
      */
-    public boolean isRandom();
+    boolean isRandom();
 
-    public RandomizerReturnCode setRandom(Boolean random);
+    RandomizerReturnCode setRandom(Boolean random);
 
     /**
      * Retrieve the configured local port
+     *
      * @return localport
      */
-    public OFPort getLocalPort();
+    OFPort getLocalPort();
 
-    public RandomizerReturnCode setLocalPort(int portnumber);
+    RandomizerReturnCode setLocalPort(int portnumber);
 
     /**
      * Retrieve the configured wan port
+     *
      * @return wanport
      */
-    public OFPort getWanPort();
+    OFPort getWanPort();
 
-    public RandomizerReturnCode setWanPort(int portnumber);
+    RandomizerReturnCode setWanPort(int portnumber);
 
-    public List<Server> getServers();
+    List<Server> getServers();
+
+    RandomizerReturnCode addServer(Server server);
+
+    RandomizerReturnCode removeServer(Server server);
 
 
-    public enum RandomizerReturnCode {
+    enum RandomizerReturnCode {
         WHITELIST_ENTRY_ADDED, WHITELIST_ENTRY_REMOVED,
         ERR_DUPLICATE_WHITELIST_ENTRY, ERR_UNKNOWN_WHITELIST_ENTRY,
-        AGENT_ADDED, AGENT_REMOVED,
-        ERR_DUPLICATE_AGENT, ERR_UNKNOWN_AGENT,
+        SERVER_ADDED, SERVER_REMOVED,
+        ERR_DUPLICATE_SERVER, ERR_UNKNOWN_SERVER,
         ENABLED, DISABLED,
         CONFIG_SET,
         READY, NOT_READY,

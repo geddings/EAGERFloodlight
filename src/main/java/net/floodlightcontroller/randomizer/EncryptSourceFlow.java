@@ -34,16 +34,17 @@ public class EncryptSourceFlow extends AbstractFlow {
 
     @Override
     public void insertFlow(Server server) {
+        log.info("Inserting source encrypt flow on {} for fake IP {}...", dpid, server.getiPv4AddressFake());
         IOFSwitch sw = Randomizer.switchService.getActiveSwitch(dpid);
         OFFactory factory = sw.getOFFactory();
-        sw.write(createFlowAdd(server, factory));
+        if(!sw.write(createFlowAdd(server, factory))) log.error("Encrypt flow could not be inserted!");
     }
 
     @Override
     public void removeFlow(Server server) {
         IOFSwitch sw = Randomizer.switchService.getActiveSwitch(dpid);
         OFFactory factory = sw.getOFFactory();
-        sw.write(createFlowDelete(server, factory));
+        if(!sw.write(createFlowDelete(server, factory))) log.error("Encrypt flow could not be removed!");
     }
 
     private OFFlowDeleteStrict createFlowDelete(Server server, OFFactory factory) {

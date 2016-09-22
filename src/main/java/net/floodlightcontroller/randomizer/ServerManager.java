@@ -1,13 +1,14 @@
 package net.floodlightcontroller.randomizer;
 
 import org.projectfloodlight.openflow.types.IPv4Address;
-import org.projectfloodlight.openflow.types.IPv6Address;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Created by geddingsbarrineau on 9/14/16.
+ *
+ * This is the server manager for the EAGER project.
  */
 public class ServerManager {
 
@@ -29,6 +30,8 @@ public class ServerManager {
         serverList.add(server);
     }
 
+    public void removeServer(Server server) { serverList.remove(server); }
+
     public Server getServer(IPv4Address ip) {
         for (Server s : serverList) {
             if (s.getiPv4AddressReal().equals(ip)) return s;
@@ -36,24 +39,18 @@ public class ServerManager {
         return null;
     }
 
-    public Server getServer(IPv6Address ip) {
-        for (Server s : serverList) {
-            if (s.getiPv6AddressReal().equals(ip)) return s;
-        }
-        return null;
-    }
-
-    public Server getServerFake(IPv4Address ip) {
+    public Server getServerFromFakeIP(IPv4Address ip) {
         for (Server s : serverList) {
             if (s.getiPv4AddressFake().equals(ip)) return s;
         }
         return null;
     }
 
-    public Server getServerFake(IPv6Address ip) {
+    public Server getServerThatContainsIP(IPv4Address ip) {
         for (Server s : serverList) {
-            if (s.getiPv6AddressFake().equals(ip)) return s;
+            if (s.getPrefix().contains(ip)) return s;
         }
         return null;
     }
+
 }

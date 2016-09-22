@@ -76,7 +76,7 @@ public class DecryptSourceFlow extends AbstractFlow {
         return factory.buildMatch()
                 //.setExact(MatchField.IN_PORT, inPort)
                 .setExact(MatchField.ETH_TYPE, EthType.IPv4)
-                .setExact(MatchField.IPV4_SRC, server.getiPv4AddressFake())
+                .setMasked(MatchField.IPV4_SRC, server.getPrefix())
                 .build();
     }
 

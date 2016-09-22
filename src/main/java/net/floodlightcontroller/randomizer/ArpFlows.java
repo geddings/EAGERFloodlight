@@ -17,6 +17,8 @@ import java.util.ArrayList;
 
 /**
  * Created by geddingsbarrineau on 9/14/16.
+ *
+ * Arp flows object to encrypt and decrypt arp packets.
  */
 public class ArpFlows extends AbstractFlow {
 
@@ -89,7 +91,7 @@ public class ArpFlows extends AbstractFlow {
             Match match = factory.buildMatch()
                     //.setExact(MatchField.IN_PORT, inPort)
                     .setExact(MatchField.ETH_TYPE, EthType.ARP)
-                    .setExact(MatchField.ARP_TPA, server.getiPv4AddressFake())
+                    .setMasked(MatchField.ARP_TPA, server.getPrefix())
                     .build();
 
             ArrayList<OFAction> actionList = new ArrayList<>();
