@@ -154,6 +154,23 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
         return RandomizerReturnCode.SERVER_REMOVED;
     }
 
+    @Override
+    public List<Connection> getConnections() {
+        return connections;
+    }
+
+    @Override
+    public RandomizerReturnCode addConnection(Connection connection) {
+        connections.add(connection);
+        return RandomizerReturnCode.CONNECTION_ADDED;
+    }
+
+    @Override
+    public RandomizerReturnCode removeConnection(Connection connection) {
+        connections.remove(connection);
+        return RandomizerReturnCode.CONNECTION_REMOVED;
+    }
+
     //endregion
     //================================================================================
 

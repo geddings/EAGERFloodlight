@@ -65,12 +65,20 @@ public interface IRandomizerService extends IFloodlightService {
 
     RandomizerReturnCode removeServer(Server server);
 
+    List<Connection> getConnections();
+
+    RandomizerReturnCode addConnection(Connection connection);
+
+    RandomizerReturnCode removeConnection(Connection connection);
+
 
     enum RandomizerReturnCode {
         WHITELIST_ENTRY_ADDED, WHITELIST_ENTRY_REMOVED,
         ERR_DUPLICATE_WHITELIST_ENTRY, ERR_UNKNOWN_WHITELIST_ENTRY,
         SERVER_ADDED, SERVER_REMOVED,
         ERR_DUPLICATE_SERVER, ERR_UNKNOWN_SERVER,
+        CONNECTION_ADDED, CONNECTION_REMOVED,
+        ERR_DUPLICATE_CONNECTION, ERR_UNKNOWN_CONNECTION,
         ENABLED, DISABLED,
         CONFIG_SET,
         READY, NOT_READY,
