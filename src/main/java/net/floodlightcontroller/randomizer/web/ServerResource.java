@@ -33,7 +33,6 @@ public class ServerResource extends org.restlet.resource.ServerResource {
     @Get
     public Object getServers() {
         IRandomizerService randomizerService = (IRandomizerService) getContext().getAttributes().get(IRandomizerService.class.getCanonicalName());
-
         return randomizerService.getServers();
     }
 

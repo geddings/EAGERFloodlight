@@ -1,5 +1,7 @@
 package net.floodlightcontroller.randomizer;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import net.floodlightcontroller.randomizer.web.ConnectionSerializer;
 import org.projectfloodlight.openflow.types.DatapathId;
 import org.projectfloodlight.openflow.types.OFPort;
 import org.slf4j.Logger;
@@ -10,6 +12,7 @@ import org.slf4j.LoggerFactory;
  *
  * This is a connection object for the EAGER project.
  */
+@JsonSerialize(using = ConnectionSerializer.class)
 public class Connection {
     private static Logger log = LoggerFactory.getLogger(Connection.class);
     private Server server;
@@ -24,7 +27,7 @@ public class Connection {
             encryptflow = new EncryptSourceFlow(wanport, localport, sw);
             decryptflow = new DecryptDestinationFlow(wanport, localport, sw);
         } else {
-            arpflows = new ArpFlowsNonRandom(wanport, localport, sw);
+            //arpflows = new ArpFlowsNonRandom(wanport, localport, sw);
             encryptflow = new EncryptDestinationFlow(wanport, localport, sw);
             decryptflow = new DecryptSourceFlow(wanport, localport, sw);
         }

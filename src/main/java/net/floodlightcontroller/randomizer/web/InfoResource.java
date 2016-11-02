@@ -1,18 +1,18 @@
 package net.floodlightcontroller.randomizer.web;
 
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import net.floodlightcontroller.randomizer.IRandomizerService;
 import net.floodlightcontroller.randomizer.Server;
-import net.floodlightcontroller.randomizer.web.ServerSerializer;
-import org.projectfloodlight.openflow.types.IPv4AddressWithMask;
 import org.restlet.resource.Get;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Created by geddingsbarrineau on 10/29/16.
+ *
  */
 public class InfoResource extends ServerResource {
     protected static Logger log = LoggerFactory.getLogger(InfoResource.class);
@@ -32,7 +32,6 @@ public class InfoResource extends ServerResource {
         IRandomizerService randomizerService = (IRandomizerService) getContext().getAttributes().get(IRandomizerService.class.getCanonicalName());
         Map<String, String> ret = new HashMap<>();
         ret.put("current-prefix", randomizerService.getCurrentPrefix().toString());
-
         return ret;
     }
 }

@@ -19,6 +19,7 @@ public class RandomizerWebRoutable implements RestletRoutable {
         router.attach("/server/{" + STR_OPERATION + "}/json", ServerResource.class);
         router.attach("/config/json", ConfigResource.class);
         router.attach("/info/json", InfoResource.class);
+        router.attach("/connections/json", ConnectionsResource.class);
         return router;
     }
 
