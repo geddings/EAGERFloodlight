@@ -20,11 +20,11 @@ import java.util.ArrayList;
  *
  * Arp flows object to encrypt and decrypt arp packets.
  */
-public class ArpFlows extends AbstractFlow {
+public class ArpFlowsRandom extends AbstractFlow {
 
-    public ArpFlows(OFPort wanport, OFPort localport, DatapathId dpid) {
+    public ArpFlowsRandom(OFPort wanport, OFPort localport, DatapathId dpid) {
         super(wanport, localport, dpid);
-        log = LoggerFactory.getLogger(ArpFlows.class);
+        log = LoggerFactory.getLogger(ArpFlowsRandom.class);
     }
 
     @Override
@@ -72,8 +72,8 @@ public class ArpFlows extends AbstractFlow {
 
             OFFlowAdd flowAdd = factory.buildFlowAdd()
                     .setBufferId(OFBufferId.NO_BUFFER)
-                    .setHardTimeout(30)
-                    .setIdleTimeout(30)
+                    .setHardTimeout(10)
+                    .setIdleTimeout(10)
                     .setPriority(32768)
                     .setMatch(match)
                     .setActions(actionList)
@@ -117,8 +117,8 @@ public class ArpFlows extends AbstractFlow {
 
             OFFlowAdd flowAdd = factory.buildFlowAdd()
                     .setBufferId(OFBufferId.NO_BUFFER)
-                    .setHardTimeout(30)
-                    .setIdleTimeout(30)
+                    .setHardTimeout(10)
+                    .setIdleTimeout(10)
                     .setPriority(32768)
                     .setMatch(match)
                     .setActions(actionList)

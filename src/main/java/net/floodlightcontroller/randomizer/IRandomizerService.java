@@ -1,6 +1,7 @@
 package net.floodlightcontroller.randomizer;
 
 import net.floodlightcontroller.core.module.IFloodlightService;
+import org.projectfloodlight.openflow.types.IPv4AddressWithMask;
 import org.projectfloodlight.openflow.types.OFPort;
 
 import java.util.List;
@@ -71,6 +72,7 @@ public interface IRandomizerService extends IFloodlightService {
 
     RandomizerReturnCode removeConnection(Connection connection);
 
+    IPv4AddressWithMask getCurrentPrefix();
 
     enum RandomizerReturnCode {
         WHITELIST_ENTRY_ADDED, WHITELIST_ENTRY_REMOVED,

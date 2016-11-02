@@ -22,6 +22,7 @@ import java.util.ArrayList;
 
 /**
  * Created by geddingsbarrineau on 9/14/16.
+ *
  */
 public class DecryptDestinationFlow extends AbstractFlow {
 
@@ -34,6 +35,7 @@ public class DecryptDestinationFlow extends AbstractFlow {
 
     @Override
     public void insertFlow(Server server) {
+        log.debug("Inserting destination decrypt flow on {} for fake IP {}...", dpid, server.getiPv4AddressFake());
         IOFSwitch sw = Randomizer.switchService.getActiveSwitch(dpid);
         OFFactory factory = sw.getOFFactory();
         sw.write(createFlowAdd(server, factory));
@@ -41,6 +43,7 @@ public class DecryptDestinationFlow extends AbstractFlow {
 
     @Override
     public void removeFlow(Server server) {
+        log.debug("Removing destination decrypt flow on {} for fake IP {}...", dpid, server.getiPv4AddressFake());
         IOFSwitch sw = Randomizer.switchService.getActiveSwitch(dpid);
         OFFactory factory = sw.getOFFactory();
         sw.write(createFlowDelete(server, factory));

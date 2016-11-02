@@ -20,6 +20,7 @@ import org.projectfloodlight.openflow.types.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -59,7 +60,7 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
 
     private void updateIPs() {
         executorService.scheduleAtFixedRate(() -> {
-            log.warn("Updating IP addresses for each server. Flows will be updated as well.");
+            log.debug("Updating IP addresses for each server. Flows will be updated as well.");
             serverManager.updateServers();
             connections.forEach(Connection::update);
         }, 0L, 10L, TimeUnit.SECONDS);
@@ -68,9 +69,9 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
     private void updatePrefixes() {
         executorService.scheduleAtFixedRate(() -> {
             // FIXME: THIS IS ONLY TEMPORARY AND WILL NOT SCALE AT ALL
-            log.warn("Updating prefixes for each server.");
+            log.debug("Updating prefixes for each server.");
             serverManager.getServers().forEach(server -> server
-                    .setPrefix(prefixes.get(Calendar.MINUTE % prefixes.size())));
+                    .setPrefix(prefixes.get(LocalDateTime.now().getMinute() % prefixes.size())));
         }, 0L, 1L, TimeUnit.MINUTES);
     }
 
@@ -171,6 +172,11 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
         return RandomizerReturnCode.CONNECTION_REMOVED;
     }
 
+    @Override
+    public IPv4AddressWithMask getCurrentPrefix() {
+        return prefixes.get(LocalDateTime.now().getMinute() % prefixes.size());
+    }
+
     //endregion
     //================================================================================
 
@@ -200,15 +206,15 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
             Server server;
             /* Packet is coming from client to the servers fake IP on the randomized side*/
             if ((server = serverManager.getServerThatContainsIP(l3.getDestinationAddress())) != null) {
-                log.info("Packet destined for a randomized server's fake prefix found...");
+                log.debug("Packet destined for a randomized server's fake prefix found...");
             }
             /* Packet is coming from the non-randomized client side (probably initiation) */
             else if ((server = serverManager.getServer(l3.getDestinationAddress())) != null) {
-                log.info("Packet destined for a randomized server's real IP found...");
+                log.debug("Packet destined for a randomized server's real IP found...");
             }
             /* Packet is unrelated to any randomized server connection */
             else {
-                log.info("Neither source nor destination IPv4 addresses matches a server. Continuing...");
+                log.debug("Neither source nor destination IPv4 addresses matches a server. Continuing...");
                 return Command.CONTINUE;
             }
 
