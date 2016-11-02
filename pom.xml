@@ -267,7 +267,12 @@
 			<artifactId>jackson-dataformat-cbor</artifactId>
 			<version>${lib-jackson-version}</version>
 		</dependency>
-	</dependencies>
+        <dependency>
+            <groupId>org.projectfloodlight</groupId>
+            <artifactId>openflowj</artifactId>
+            <version>3.0.0-SNAPSHOT</version>
+        </dependency>
+    </dependencies>
 	<properties>
 		<lib-restlet-version>2.3.2</lib-restlet-version>
 		<lib-jackson-version>2.4.4</lib-jackson-version>
