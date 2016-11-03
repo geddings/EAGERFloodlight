@@ -69,13 +69,13 @@ import net.floodlightcontroller.linkdiscovery.ILinkDiscovery.SwitchType;
 import net.floodlightcontroller.linkdiscovery.ILinkDiscovery.UpdateOperation;
 import net.floodlightcontroller.linkdiscovery.ILinkDiscoveryListener;
 import net.floodlightcontroller.linkdiscovery.ILinkDiscoveryService;
+import net.floodlightcontroller.linkdiscovery.Link;
 import net.floodlightcontroller.linkdiscovery.web.LinkDiscoveryWebRoutable;
 import net.floodlightcontroller.packet.BSN;
 import net.floodlightcontroller.packet.Ethernet;
 import net.floodlightcontroller.packet.LLDP;
 import net.floodlightcontroller.packet.LLDPTLV;
 import net.floodlightcontroller.restserver.IRestApiService;
-import net.floodlightcontroller.routing.Link;
 import net.floodlightcontroller.storage.IResultSet;
 import net.floodlightcontroller.storage.IStorageSourceListener;
 import net.floodlightcontroller.storage.IStorageSourceService;
@@ -325,7 +325,7 @@ IFloodlightModule, IInfoProvider {
 		byte[] srcMac = ofpPort.getHwAddr().getBytes();
 		byte[] zeroMac = { 0, 0, 0, 0, 0, 0 };
 		if (Arrays.equals(srcMac, zeroMac)) {
-			log.warn("Port {}/{} has zero hareware address"
+			log.warn("Port {}/{} has zero hardware address"
 					+ "overwrite with lower 6 bytes of dpid",
 					dpid.toString(), ofpPort.getPortNo().getPortNumber());
 			System.arraycopy(dpidArray, 2, srcMac, 0, 6);

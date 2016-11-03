@@ -19,7 +19,6 @@ package net.floodlightcontroller.routing;
 
 import java.util.EnumSet;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -39,13 +38,12 @@ import net.floodlightcontroller.linkdiscovery.ILinkDiscoveryService;
 import net.floodlightcontroller.packet.IPacket;
 import net.floodlightcontroller.routing.IRoutingService;
 import net.floodlightcontroller.routing.IRoutingDecision;
-import net.floodlightcontroller.routing.Route;
+import net.floodlightcontroller.routing.Path;
 import net.floodlightcontroller.topology.ITopologyService;
 import net.floodlightcontroller.util.FlowModUtils;
 import net.floodlightcontroller.util.MatchUtils;
 import net.floodlightcontroller.util.OFDPAUtils;
 import net.floodlightcontroller.util.OFMessageDamper;
-import net.floodlightcontroller.util.TimedCache;
 
 import org.projectfloodlight.openflow.protocol.OFFlowMod;
 import org.projectfloodlight.openflow.protocol.match.Match;
@@ -76,24 +74,26 @@ import org.slf4j.LoggerFactory;
 public abstract class ForwardingBase implements IOFMessageListener {
     protected static Logger log = LoggerFactory.getLogger(ForwardingBase.class);
 
-    protected static int OFMESSAGE_DAMPER_CAPACITY = 10000; // TODO: find sweet spot
-    protected static int OFMESSAGE_DAMPER_TIMEOUT = 250; // ms
-
     public static int FLOWMOD_DEFAULT_IDLE_TIMEOUT = 5; // in seconds
     public static int FLOWMOD_DEFAULT_HARD_TIMEOUT = 0; // infinite
     public static int FLOWMOD_DEFAULT_PRIORITY = 1; // 0 is the default table-miss flow in OF1.3+, so we need to use 1
 
-    public static TableId FLOWMOD_DEFAULT_TABLE_ID = TableId.ZERO;
+    protected static TableId FLOWMOD_DEFAULT_TABLE_ID = TableId.ZERO;
 
     protected static boolean FLOWMOD_DEFAULT_SET_SEND_FLOW_REM_FLAG = false;
 
+    protected static boolean FLOWMOD_DEFAULT_MATCH_IN_PORT = true;
     protected static boolean FLOWMOD_DEFAULT_MATCH_VLAN = true;
     protected static boolean FLOWMOD_DEFAULT_MATCH_MAC = true;
-    protected static boolean FLOWMOD_DEFAULT_MATCH_IP_ADDR = true;
+    protected static boolean FLOWMOD_DEFAULT_MATCH_IP = true;
     protected static boolean FLOWMOD_DEFAULT_MATCH_TRANSPORT = true;
-
-    protected static final short FLOWMOD_DEFAULT_IDLE_TIMEOUT_CONSTANT = 5;
-    protected static final short FLOWMOD_DEFAULT_HARD_TIMEOUT_CONSTANT = 0;
+    
+    protected static boolean FLOWMOD_DEFAULT_MATCH_MAC_SRC = true;
+    protected static boolean FLOWMOD_DEFAULT_MATCH_MAC_DST = true;
+    protected static boolean FLOWMOD_DEFAULT_MATCH_IP_SRC = true;
+    protected static boolean FLOWMOD_DEFAULT_MATCH_IP_DST = true;
+    protected static boolean FLOWMOD_DEFAULT_MATCH_TRANSPORT_SRC = true;
+    protected static boolean FLOWMOD_DEFAULT_MATCH_TRANSPORT_DST = true;
 
     protected static boolean FLOOD_ALL_ARP_PACKETS = false;
 
@@ -107,33 +107,17 @@ public abstract class ForwardingBase implements IOFMessageListener {
     protected IDebugCounterService debugCounterService;
     protected ILinkDiscoveryService linkService;
 
-    protected OFMessageDamper messageDamper;
-
-    // for broadcast loop suppression
-    protected boolean broadcastCacheFeature = true;
-    public final int prime1 = 2633;  // for hash calculation
-    public final static int prime2 = 4357;  // for hash calculation
-    public TimedCache<Long> broadcastCache = new TimedCache<Long>(100, 5*1000);  // 5 seconds interval;
-
     // flow-mod - for use in the cookie
-    public static final int FORWARDING_APP_ID = 2; // TODO: This must be managed
-    // by a global APP_ID class
+    public static final int FORWARDING_APP_ID = 2;
     static {
-        AppCookie.registerApp(FORWARDING_APP_ID, "Forwarding");
+        AppCookie.registerApp(FORWARDING_APP_ID, "forwarding");
     }
-    public static final U64 appCookie = AppCookie.makeCookie(FORWARDING_APP_ID, 0);
+    protected static final U64 DEFAULT_FORWARDING_COOKIE = AppCookie.makeCookie(FORWARDING_APP_ID, 0);
 
-    // Comparator for sorting by SwitchCluster
-    public Comparator<SwitchPort> clusterIdComparator =
-            new Comparator<SwitchPort>() {
-        @Override
-        public int compare(SwitchPort d1, SwitchPort d2) {
-            DatapathId d1ClusterId = topologyService.getOpenflowDomainId(d1.getNodeId());
-            DatapathId d2ClusterId = topologyService.getOpenflowDomainId(d2.getNodeId());
-            return d1ClusterId.compareTo(d2ClusterId);
-        }
-    };
-
+    protected OFMessageDamper messageDamper;
+    private static int OFMESSAGE_DAMPER_CAPACITY = 10000;
+    private static int OFMESSAGE_DAMPER_TIMEOUT = 250; // ms
+    
     protected void init() {
         messageDamper = new OFMessageDamper(OFMESSAGE_DAMPER_CAPACITY,
                 EnumSet.of(OFType.FLOW_MOD),
@@ -193,7 +177,7 @@ public abstract class ForwardingBase implements IOFMessageListener {
      *        OFFlowMod.OFPFC_MODIFY etc.
      * @return true if a packet out was sent on the first-hop switch of this route
      */
-    public boolean pushRoute(Route route, Match match, OFPacketIn pi,
+    public boolean pushRoute(Path route, Match match, OFPacketIn pi,
             DatapathId pinSwitch, U64 cookie, FloodlightContext cntx,
             boolean requestFlowRemovedNotification, OFFlowModCommand flowModCommand) {
 
@@ -242,7 +226,9 @@ public abstract class ForwardingBase implements IOFMessageListener {
             // set input and output ports on the switch
             OFPort outPort = switchPortList.get(indx).getPortId();
             OFPort inPort = switchPortList.get(indx - 1).getPortId();
-            mb.setExact(MatchField.IN_PORT, inPort);
+            if (FLOWMOD_DEFAULT_MATCH_IN_PORT) {
+                mb.setExact(MatchField.IN_PORT, inPort);
+            }
             aob.setPort(outPort);
             aob.setMaxLen(Integer.MAX_VALUE);
             actions.add(aob.build());
@@ -267,7 +253,7 @@ public abstract class ForwardingBase implements IOFMessageListener {
             if (sw.getOFFactory().getVersion().compareTo(OFVersion.OF_10) != 0) {
                 fmb.setTableId(FLOWMOD_DEFAULT_TABLE_ID);
             }
-            
+                        
             if (log.isTraceEnabled()) {
                 log.trace("Pushing Route flowmod routeIndx={} " +
                         "sw={} inPort={} outPort={}",
