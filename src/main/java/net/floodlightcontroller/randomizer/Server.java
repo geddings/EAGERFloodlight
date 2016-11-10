@@ -1,5 +1,7 @@
 package net.floodlightcontroller.randomizer;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import net.floodlightcontroller.randomizer.web.ServerSerializer;
 import org.projectfloodlight.openflow.types.IPv4Address;
 import org.projectfloodlight.openflow.types.IPv4AddressWithMask;
 import org.slf4j.Logger;
@@ -12,6 +14,7 @@ import java.util.Random;
  *
  * This is a Server object for the EAGER project.
  */
+@JsonSerialize(using = ServerSerializer.class)
 public class Server {
     private static Logger log = LoggerFactory.getLogger(Server.class);
     private IPv4Address iPv4AddressReal;
@@ -31,7 +34,7 @@ public class Server {
         iPv4AddressFake = IPv4Address.of(generator.nextInt())
                 .and(prefix.getMask().not())
                 .or(prefix.getValue());
-        log.info("New fake address: {}", iPv4AddressFake);
+        log.debug("New fake address: {}", iPv4AddressFake);
     }
 
     public IPv4Address getiPv4AddressReal() {
@@ -48,7 +51,7 @@ public class Server {
 
     public void setPrefix(IPv4AddressWithMask prefix) {
         this.prefix = prefix;
-        log.info("New prefix: {}", prefix);
+        log.debug("New prefix: {}", prefix);
     }
 
     @Override

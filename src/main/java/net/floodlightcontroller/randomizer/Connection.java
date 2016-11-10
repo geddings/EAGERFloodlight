@@ -1,5 +1,7 @@
 package net.floodlightcontroller.randomizer;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import net.floodlightcontroller.randomizer.web.ConnectionSerializer;
 import org.projectfloodlight.openflow.types.DatapathId;
 import org.projectfloodlight.openflow.types.OFPort;
 import org.slf4j.Logger;
@@ -10,33 +12,34 @@ import org.slf4j.LoggerFactory;
  *
  * This is a connection object for the EAGER project.
  */
+@JsonSerialize(using = ConnectionSerializer.class)
 public class Connection {
     private static Logger log = LoggerFactory.getLogger(Connection.class);
     private Server server;
     private AbstractFlow encryptflow;
     private AbstractFlow decryptflow;
-    private ArpFlows arpflows = null;
+    private AbstractFlow arpflows = null;
 
     public Connection(Server server, DatapathId sw, OFPort wanport, OFPort localport, Boolean isRandomSide) {
         this.server = server;
         if (isRandomSide) {     //Todo install flows immediately
-            arpflows = new ArpFlows(wanport, localport, sw);
+            arpflows = new ArpFlowsRandom(wanport, localport, sw);
             encryptflow = new EncryptSourceFlow(wanport, localport, sw);
             decryptflow = new DecryptDestinationFlow(wanport, localport, sw);
         } else {
+            //arpflows = new ArpFlowsNonRandom(wanport, localport, sw);
             encryptflow = new EncryptDestinationFlow(wanport, localport, sw);
             decryptflow = new DecryptSourceFlow(wanport, localport, sw);
         }
-        log.info("Inserting encrypt and decrypt flows for a new connection!");
+        log.debug("Inserting encrypt and decrypt flows for a new connection!");
         encryptflow.insertFlow(server);
         decryptflow.insertFlow(server);
     }
 
     public void update() {
-        log.info("Removing encrypt and inserting encrypt and decrypt flows for an existing connection!");
-        if (arpflows != null) arpflows.insertFlow(server);
-        log.info("{}", encryptflow);
-        encryptflow.removeFlow(server);
+        log.debug("Removing encrypt and inserting encrypt and decrypt flows for an existing connection!");
+        arpflows.insertFlow(server);
+        //encryptflow.removeFlow(server);
         encryptflow.insertFlow(server);
         decryptflow.insertFlow(server);
     }

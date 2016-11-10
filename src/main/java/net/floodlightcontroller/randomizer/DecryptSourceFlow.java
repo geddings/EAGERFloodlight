@@ -34,6 +34,7 @@ public class DecryptSourceFlow extends AbstractFlow {
 
     @Override
     public void insertFlow(Server server) {
+        log.debug("Inserting source decrypt flow on {} for fake IP {}...", dpid, server.getiPv4AddressFake());
         IOFSwitch sw = Randomizer.switchService.getActiveSwitch(dpid);
         OFFactory factory = sw.getOFFactory();
         sw.write(createFlowAdd(server, factory));
@@ -41,6 +42,7 @@ public class DecryptSourceFlow extends AbstractFlow {
 
     @Override
     public void removeFlow(Server server) {
+        log.debug("Removing source decrypt flow on {} for fake IP {}...", dpid, server.getiPv4AddressFake());
         IOFSwitch sw = Randomizer.switchService.getActiveSwitch(dpid);
         OFFactory factory = sw.getOFFactory();
         sw.write(createFlowDelete(server, factory));

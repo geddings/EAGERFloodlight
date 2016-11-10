@@ -39,6 +39,16 @@ abstract class AbstractFlow {
 
     abstract public void removeFlow(Server server);
 
+    @Override
+    public String toString() {
+        return "AbstractFlow{" +
+                "dpid=" + dpid +
+                ", wanport=" + wanport +
+                ", localport=" + localport +
+                ", match=" + match +
+                ", action=" + action +
+                '}';
+    }
 }
 
 
