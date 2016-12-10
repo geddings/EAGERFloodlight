@@ -17,22 +17,7 @@
 
 package net.floodlightcontroller.forwarding;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-
-import net.floodlightcontroller.core.FloodlightContext;
-import net.floodlightcontroller.core.IFloodlightProviderService;
-import net.floodlightcontroller.core.IOFSwitch;
-import net.floodlightcontroller.core.IOFSwitchListener;
-import net.floodlightcontroller.core.PortChangeType;
+import net.floodlightcontroller.core.*;
 import net.floodlightcontroller.core.internal.IOFSwitchService;
 import net.floodlightcontroller.core.module.FloodlightModuleContext;
 import net.floodlightcontroller.core.module.FloodlightModuleException;
@@ -46,53 +31,23 @@ import net.floodlightcontroller.devicemanager.IDeviceService;
 import net.floodlightcontroller.devicemanager.SwitchPort;
 import net.floodlightcontroller.linkdiscovery.ILinkDiscoveryListener;
 import net.floodlightcontroller.linkdiscovery.ILinkDiscoveryService;
-import net.floodlightcontroller.packet.Ethernet;
-import net.floodlightcontroller.packet.IPv4;
-import net.floodlightcontroller.packet.IPv6;
-import net.floodlightcontroller.packet.TCP;
-import net.floodlightcontroller.packet.UDP;
-import net.floodlightcontroller.routing.ForwardingBase;
-import net.floodlightcontroller.routing.IRoutingDecision;
-import net.floodlightcontroller.routing.IRoutingDecisionChangedListener;
-import net.floodlightcontroller.routing.IRoutingService;
-import net.floodlightcontroller.routing.Path;
+import net.floodlightcontroller.packet.*;
+import net.floodlightcontroller.routing.*;
 import net.floodlightcontroller.topology.ITopologyService;
-import net.floodlightcontroller.util.FlowModUtils;
-import net.floodlightcontroller.util.OFDPAUtils;
-import net.floodlightcontroller.util.OFMessageUtils;
-import net.floodlightcontroller.util.OFPortMode;
-import net.floodlightcontroller.util.OFPortModeTuple;
-import net.floodlightcontroller.util.ParseUtils;
-
-import org.projectfloodlight.openflow.protocol.OFFlowMod;
-import org.projectfloodlight.openflow.protocol.OFFlowModCommand;
-import org.projectfloodlight.openflow.protocol.OFGroupType;
-import org.projectfloodlight.openflow.protocol.OFMessage;
-import org.projectfloodlight.openflow.protocol.OFPacketIn;
-import org.projectfloodlight.openflow.protocol.OFPacketOut;
-import org.projectfloodlight.openflow.protocol.OFPortDesc;
-import org.projectfloodlight.openflow.protocol.OFVersion;
+import net.floodlightcontroller.util.*;
+import org.projectfloodlight.openflow.protocol.*;
 import org.projectfloodlight.openflow.protocol.action.OFAction;
 import org.projectfloodlight.openflow.protocol.match.Match;
 import org.projectfloodlight.openflow.protocol.match.MatchField;
-import org.projectfloodlight.openflow.types.DatapathId;
-import org.projectfloodlight.openflow.types.EthType;
-import org.projectfloodlight.openflow.types.IPv4Address;
-import org.projectfloodlight.openflow.types.IPv6Address;
-import org.projectfloodlight.openflow.types.IpProtocol;
-import org.projectfloodlight.openflow.types.MacAddress;
-import org.projectfloodlight.openflow.types.Masked;
-import org.projectfloodlight.openflow.types.OFBufferId;
-import org.projectfloodlight.openflow.types.OFGroup;
-import org.projectfloodlight.openflow.types.OFPort;
-import org.projectfloodlight.openflow.types.OFVlanVidMatch;
-import org.projectfloodlight.openflow.types.TableId;
-import org.projectfloodlight.openflow.types.U64;
-import org.projectfloodlight.openflow.types.VlanVid;
+import org.projectfloodlight.openflow.types.*;
 import org.python.google.common.collect.ImmutableList;
 import org.python.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class Forwarding extends ForwardingBase implements IFloodlightModule, IOFSwitchListener, ILinkDiscoveryListener, IRoutingDecisionChangedListener {
     protected static final Logger log = LoggerFactory.getLogger(Forwarding.class);
@@ -102,18 +57,18 @@ public class Forwarding extends ForwardingBase implements IFloodlightModule, IOF
      * Example: 0x0123456789ABCDEF
      * App ID:  0xFFF0000000000000
      * User:    0x000FFFFFFFFFFFFF
-     * 
-     * Of the user portion, we further subdivide into routing decision 
+     *
+     * Of the user portion, we further subdivide into routing decision
      * bits and flowset bits. The former relates the flow to routing
-     * decisions, such as firewall allow or deny/drop. It allows for 
-     * modification of the flows upon a future change in the routing 
-     * decision. The latter indicates a "family" of flows or "flowset" 
+     * decisions, such as firewall allow or deny/drop. It allows for
+     * modification of the flows upon a future change in the routing
+     * decision. The latter indicates a "family" of flows or "flowset"
      * used to complete an end-to-end connection between two devices
      * or hosts in the network. It is used to assist in the entire
      * flowset removal upon a link or port down event anywhere along
      * the path. This is required in order to allow a new path to be
      * used and a new flowset installed.
-     * 
+     *
      * TODO: shrink these masks if you need to add more subfields
      * or need to allow for a larger number of routing decisions
      * or flowsets
@@ -132,7 +87,7 @@ public class Forwarding extends ForwardingBase implements IFloodlightModule, IOF
     protected static class FlowSetIdRegistry {
         private volatile Map<NodePortTuple, Set<U64>> nptToFlowSetIds;
         private volatile Map<U64, Set<NodePortTuple>> flowSetIdToNpts;
-        
+
         private volatile long flowSetGenerator = -1;
 
         private static volatile FlowSetIdRegistry instance;
@@ -148,7 +103,7 @@ public class Forwarding extends ForwardingBase implements IFloodlightModule, IOF
             }
             return instance;
         }
-        
+
         /**
          * Only for use by unit test to help w/ordering
          * @param seed
@@ -156,7 +111,7 @@ public class Forwarding extends ForwardingBase implements IFloodlightModule, IOF
         protected void seedFlowSetIdForUnitTest(int seed) {
             flowSetGenerator = seed;
         }
-        
+
         protected synchronized U64 generateFlowSetId() {
             flowSetGenerator += 1;
             if (flowSetGenerator == FLOWSET_MAX) {
@@ -176,7 +131,7 @@ public class Forwarding extends ForwardingBase implements IFloodlightModule, IOF
                 Set<U64> ids = new HashSet<U64>();
                 ids.add(flowSetId);
                 nptToFlowSetIds.put(npt, ids);
-            }  
+            }
 
             if (flowSetIdToNpts.containsKey(flowSetId)) {
                 Set<NodePortTuple> npts = flowSetIdToNpts.get(flowSetId);
@@ -294,7 +249,7 @@ public class Forwarding extends ForwardingBase implements IFloodlightModule, IOF
     }
 
     /** Called when the handleDecisionChange is triggered by an event (routing decision was changed in firewall).
-     *  
+     *
      *  @param changedDecisions Masked routing descriptors for flows that should be deleted from the switch.
      */
     @Override
@@ -380,7 +335,7 @@ public class Forwarding extends ForwardingBase implements IFloodlightModule, IOF
         OFFlowMod.Builder fmb = sw.getOFFactory().buildFlowAdd();
         List<OFAction> actions = new ArrayList<OFAction>(); // set no action to drop
         U64 flowSetId = flowSetIdRegistry.generateFlowSetId();
-        U64 cookie = makeForwardingCookie(decision, flowSetId); 
+        U64 cookie = makeForwardingCookie(decision, flowSetId);
 
         /* If link goes down, we'll remember to remove this flow */
         if (! m.isFullyWildcarded(MatchField.IN_PORT)) {
@@ -391,7 +346,7 @@ public class Forwarding extends ForwardingBase implements IFloodlightModule, IOF
         fmb.setCookie(cookie)
         .setHardTimeout(FLOWMOD_DEFAULT_HARD_TIMEOUT)
         .setIdleTimeout(FLOWMOD_DEFAULT_IDLE_TIMEOUT)
-        .setBufferId(OFBufferId.NO_BUFFER) 
+        .setBufferId(OFBufferId.NO_BUFFER)
         .setMatch(m)
         .setPriority(FLOWMOD_DEFAULT_PRIORITY);
 
@@ -428,8 +383,8 @@ public class Forwarding extends ForwardingBase implements IFloodlightModule, IOF
         }
 
         /* Some physical switches partially support or do not support ARP flows */
-        if (FLOOD_ALL_ARP_PACKETS && 
-                IFloodlightProviderService.bcStore.get(cntx, IFloodlightProviderService.CONTEXT_PI_PAYLOAD).getEtherType() 
+        if (FLOOD_ALL_ARP_PACKETS &&
+                IFloodlightProviderService.bcStore.get(cntx, IFloodlightProviderService.CONTEXT_PI_PAYLOAD).getEtherType()
                 == EthType.ARP) {
             log.debug("ARP flows disabled in Forwarding. Flooding ARP packet");
             doFlood(sw, pi, decision, cntx);
@@ -437,18 +392,18 @@ public class Forwarding extends ForwardingBase implements IFloodlightModule, IOF
         }
 
         /* This packet-in is from a switch in the path before its flow was installed along the path */
-        if (!topologyService.isEdge(srcSw, srcPort)) {  
+        if (!topologyService.isEdge(srcSw, srcPort)) {
             log.debug("Packet destination is known, but packet was not received on an edge port (rx on {}/{}). Flooding packet", srcSw, srcPort);
             doFlood(sw, pi, decision, cntx);
-            return; 
-        }   
+            return;
+        }
 
-        /* 
+        /*
          * Search for the true attachment point. The true AP is
          * not an endpoint of a link. It is a switch port w/o an
          * associated link. Note this does not necessarily hold
          * true for devices that 'live' between OpenFlow islands.
-         * 
+         *
          * TODO Account for the case where a device is actually
          * attached between islands (possibly on a non-OF switch
          * in between two OpenFlow switches).
@@ -459,9 +414,9 @@ public class Forwarding extends ForwardingBase implements IFloodlightModule, IOF
                 dstAp = ap;
                 break;
             }
-        }	
+        }
 
-        /* 
+        /*
          * This should only happen (perhaps) when the controller is
          * actively learning a new topology and hasn't discovered
          * all links yet, or a switch was in standalone mode and the
@@ -471,18 +426,18 @@ public class Forwarding extends ForwardingBase implements IFloodlightModule, IOF
         if (dstAp == null) {
             log.debug("Could not locate edge attachment point for destination device {}. Flooding packet");
             doFlood(sw, pi, decision, cntx);
-            return; 
+            return;
         }
 
         /* Validate that the source and destination are not on the same switch port */
         if (sw.getId().equals(dstAp.getNodeId()) && srcPort.equals(dstAp.getPortId())) {
             log.info("Both source and destination are on the same switch/port {}/{}. Dropping packet", sw.toString(), srcPort);
             return;
-        }			
+        }
 
         U64 flowSetId = flowSetIdRegistry.generateFlowSetId();
         U64 cookie = makeForwardingCookie(decision, flowSetId);
-        Path path = routingEngineService.getPath(srcSw, 
+        Path path = routingEngineService.getPath(srcSw,
                 srcPort,
                 dstAp.getNodeId(),
                 dstAp.getPortId());
@@ -499,11 +454,11 @@ public class Forwarding extends ForwardingBase implements IFloodlightModule, IOF
                 log.debug("Creating flow rules on the route, match rule: {}", m);
             }
 
-            pushRoute(path, m, pi, sw.getId(), cookie, 
+            pushRoute(path, m, pi, sw.getId(), cookie,
                     cntx, requestFlowRemovedNotifn,
-                    OFFlowModCommand.ADD);	
-            
-            /* 
+                    OFFlowModCommand.ADD);
+
+            /*
              * Register this flowset with ingress and egress ports for link down
              * flow removal. This is done after we push the path as it is blocking.
              */
@@ -516,9 +471,9 @@ public class Forwarding extends ForwardingBase implements IFloodlightModule, IOF
     /**
      * Instead of using the Firewall's routing decision Match, which might be as general
      * as "in_port" and inadvertently Match packets erroneously, construct a more
-     * specific Match based on the deserialized OFPacketIn's payload, which has been 
+     * specific Match based on the deserialized OFPacketIn's payload, which has been
      * placed in the FloodlightContext already by the Controller.
-     * 
+     *
      * @param sw, the switch on which the packet was received
      * @param inPort, the ingress switch port on which the packet was received
      * @param cntx, the current context which contains the deserialized packet
@@ -529,15 +484,15 @@ public class Forwarding extends ForwardingBase implements IFloodlightModule, IOF
         // We need to add in specifics for the hosts we're routing between.
         Ethernet eth = IFloodlightProviderService.bcStore.get(cntx, IFloodlightProviderService.CONTEXT_PI_PAYLOAD);
 
-        VlanVid vlan = null;      
+        VlanVid vlan = null;
         if (pi.getVersion().compareTo(OFVersion.OF_11) > 0 && /* 1.0 and 1.1 do not have a match */
-                pi.getMatch().get(MatchField.VLAN_VID) != null) { 
+                pi.getMatch().get(MatchField.VLAN_VID) != null) {
             vlan = pi.getMatch().get(MatchField.VLAN_VID).getVlanVid(); /* VLAN may have been popped by switch */
         }
         if (vlan == null) {
             vlan = VlanVid.ofVlan(eth.getVlanID()); /* VLAN might still be in packet */
         }
-        
+
         MacAddress srcMac = eth.getSourceMACAddress();
         MacAddress dstMac = eth.getDestinationMACAddress();
 
@@ -775,8 +730,8 @@ public class Forwarding extends ForwardingBase implements IFloodlightModule, IOF
         tmp = configParameters.get("match");
         if (tmp != null) {
             tmp = tmp.toLowerCase();
-            if (!tmp.contains("in-port") && !tmp.contains("vlan") 
-                    && !tmp.contains("mac") && !tmp.contains("ip") 
+            if (!tmp.contains("in-port") && !tmp.contains("vlan")
+                    && !tmp.contains("mac") && !tmp.contains("ip")
                     && !tmp.contains("transport")) {
                 /* leave the default configuration -- blank or invalid 'match' value */
             } else {
@@ -796,7 +751,7 @@ public class Forwarding extends ForwardingBase implements IFloodlightModule, IOF
         tmp = configParameters.get("detailed-match");
         if (tmp != null) {
             tmp = tmp.toLowerCase();
-            if (!tmp.contains("src-mac") && !tmp.contains("dst-mac") 
+            if (!tmp.contains("src-mac") && !tmp.contains("dst-mac")
                     && !tmp.contains("src-ip") && !tmp.contains("dst-ip")
                     && !tmp.contains("src-transport") && !tmp.contains("dst-transport")) {
                 /* leave the default configuration -- both src and dst for layers defined above */
@@ -856,7 +811,7 @@ public class Forwarding extends ForwardingBase implements IFloodlightModule, IOF
     }
 
     @Override
-    public void switchRemoved(DatapathId switchId) {		
+    public void switchRemoved(DatapathId switchId) {
     }
 
     @Override
@@ -895,7 +850,7 @@ public class Forwarding extends ForwardingBase implements IFloodlightModule, IOF
     }
 
     @Override
-    public void switchPortChanged(DatapathId switchId, OFPortDesc port, PortChangeType type) {	
+    public void switchPortChanged(DatapathId switchId, OFPortDesc port, PortChangeType type) {
         /* Port down events handled via linkDiscoveryUpdate(), which passes thru all events */
     }
 
@@ -945,8 +900,8 @@ public class Forwarding extends ForwardingBase implements IFloodlightModule, IOF
                                 messageDamper.write(srcSw, msgs);
                                 log.debug("src: Removing flows to/from DPID={}, port={}", u.getSrc(), u.getSrcPort());
                                 log.debug("src: Cookie/mask {}/{}", cookie, cookieMask);
-                                
-                                /* 
+
+                                /*
                                  * Now, for each ID on this particular failed link, remove
                                  * all other flows in the network using this ID.
                                  */
@@ -1014,7 +969,7 @@ public class Forwarding extends ForwardingBase implements IFloodlightModule, IOF
                                 log.debug("dst: Removing flows to/from DPID={}, port={}", u.getDst(), u.getDstPort());
                                 log.debug("dst: Cookie/mask {}/{}", cookie, cookieMask);
 
-                                /* 
+                                /*
                                  * Now, for each ID on this particular failed link, remove
                                  * all other flows in the network using this ID.
                                  */

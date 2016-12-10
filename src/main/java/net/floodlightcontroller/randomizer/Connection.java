@@ -38,10 +38,14 @@ public class Connection {
 
     public void update() {
         log.debug("Removing encrypt and inserting encrypt and decrypt flows for an existing connection!");
-        arpflows.insertFlow(server);
-        //encryptflow.removeFlow(server);
-        encryptflow.insertFlow(server);
-        decryptflow.insertFlow(server);
+        try {
+            if (arpflows != null) arpflows.insertFlow(server);
+            //encryptflow.removeFlow(server);
+            encryptflow.insertFlow(server);
+            decryptflow.insertFlow(server);
+        } catch (Exception e) {
+            log.error("{} Yes, I do!", new Object[] {e.getMessage(), e});
+        }
     }
 
     public Server getServer() {

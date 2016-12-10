@@ -24,6 +24,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -59,21 +60,28 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
     //region Helper Functions
 
     private void updateIPs() {
-        executorService.scheduleAtFixedRate(() -> {
+        ScheduledFuture<?> ipFuture = executorService.scheduleAtFixedRate(() -> {
             log.debug("Updating IP addresses for each server. Flows will be updated as well.");
-            serverManager.updateServers();
-            connections.forEach(Connection::update);
+            try {
+                serverManager.updateServers();
+                connections.forEach(Connection::update);
+            } catch (Exception e) {
+                log.error("{} Yes, I do!!!", new Object[] {e.getMessage(), e});
+            }
         }, 0L, 10L, TimeUnit.SECONDS);
+
     }
 
     private void updatePrefixes() {
-        executorService.scheduleAtFixedRate(() -> {
+        ScheduledFuture<?> prefixFuture = executorService.scheduleAtFixedRate(() -> {
             // FIXME: THIS IS ONLY TEMPORARY AND WILL NOT SCALE AT ALL
             log.debug("Updating prefixes for each server.");
             serverManager.getServers().forEach(server -> server
                     .setPrefix(prefixes.get(LocalDateTime.now().getMinute() % prefixes.size())));
         }, 0L, 1L, TimeUnit.MINUTES);
     }
+
+
 
     //endregion
     //================================================================================
@@ -298,12 +306,11 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
         prefixes = new ArrayList<IPv4AddressWithMask>();
 
         /* Add prefixes here */
-        prefixes.add(IPv4AddressWithMask.of("20.0.0.0/24"));
         prefixes.add(IPv4AddressWithMask.of("30.0.0.0/24"));
         prefixes.add(IPv4AddressWithMask.of("40.0.0.0/24"));
 
         /* Add servers here */
-        serverManager.addServer(new Server(IPv4Address.of(10, 0, 0, 2), IPv4AddressWithMask.NONE));
+        serverManager.addServer(new Server(IPv4Address.of(20, 0, 0, 4), IPv4AddressWithMask.NONE));
     }
 
     @Override
