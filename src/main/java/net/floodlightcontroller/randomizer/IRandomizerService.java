@@ -47,9 +47,9 @@ public interface IRandomizerService extends IFloodlightService {
      *
      * @return localport
      */
-    OFPort getLocalPort();
+    OFPort getLanPort();
 
-    RandomizerReturnCode setLocalPort(int portnumber);
+    RandomizerReturnCode setLanPort(int portnumber);
 
     /**
      * Retrieve the configured wan port

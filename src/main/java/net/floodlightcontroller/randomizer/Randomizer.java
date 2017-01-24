@@ -17,6 +17,7 @@ import net.floodlightcontroller.restserver.IRestApiService;
 import org.projectfloodlight.openflow.protocol.*;
 import org.projectfloodlight.openflow.protocol.match.MatchField;
 import org.projectfloodlight.openflow.types.*;
+import org.quartz.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,6 +27,10 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+
+import static org.quartz.TriggerBuilder.*;
+import static org.quartz.SimpleScheduleBuilder.*;
+import static org.quartz.DateBuilder.*;
 
 /**
  * Created by geddingsbarrineau on 7/14/16.
@@ -49,7 +54,7 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
 
     private static boolean enabled;
     private static boolean randomize;
-    private static OFPort localport;
+    private static OFPort lanport;
     private static OFPort wanport;
 
     //endregion
@@ -81,7 +86,53 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
         }, 0L, 1L, TimeUnit.MINUTES);
     }
 
+    private void scheduleJobs() {
+        SchedulerFactory schedulerFactory = new org.quartz.impl.StdSchedulerFactory();
+        Scheduler scheduler = null;
+        try {
+            scheduler = schedulerFactory.getScheduler();
+        } catch (SchedulerException e) {
+            e.printStackTrace();
+        }
 
+        Trigger prefixtrigger = newTrigger()
+                .withIdentity("trigger8") // because group is not specified, "trigger8" will be in the default group
+                .startAt(evenMinuteDateAfterNow()) // get the next even-minute (seconds zero ("**:00"))
+                .withSchedule(simpleSchedule()
+                        .withIntervalInSeconds(15)
+                        .repeatForever())
+                // note that in this example, 'forJob(..)' is not called
+                //  - which is valid if the trigger is passed to the scheduler along with the job
+                .build();
+
+        JobDetail prefixjob = JobBuilder.newJob(PrefixUpdateJob.class)
+                .withIdentity("Prefix Update")
+                .build();
+
+        Trigger addresstrigger = newTrigger()
+                .withIdentity("trigger9") // because group is not specified, "trigger8" will be in the default group
+                .startAt(evenMinuteDateAfterNow()) // get the next even-minute (seconds zero ("**:00"))
+                .withSchedule(simpleSchedule()
+                        .withIntervalInSeconds(5)
+                        .repeatForever())
+                // note that in this example, 'forJob(..)' is not called
+                //  - which is valid if the trigger is passed to the scheduler along with the job
+                .build();
+
+        JobDetail addressjob = JobBuilder.newJob(AddressUpdateJob.class)
+                .withIdentity("Address Update")
+                .build();
+
+        try {
+            if (scheduler != null) {
+                scheduler.scheduleJob(prefixjob, prefixtrigger);
+                scheduler.scheduleJob(addressjob, addresstrigger);
+                scheduler.start();
+            }
+        } catch (SchedulerException e) {
+            e.printStackTrace();
+        }
+    }
 
     //endregion
     //================================================================================
@@ -121,14 +172,15 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
     }
 
     @Override
-    public OFPort getLocalPort() {
-        return localport;
+    public OFPort getLanPort() {
+        return lanport;
     }
 
     @Override
-    public RandomizerReturnCode setLocalPort(int portnumber) {
-        localport = OFPort.of(portnumber);
-        log.warn("Set localport to {}", portnumber);
+    public RandomizerReturnCode setLanPort(int portnumber) {
+        lanport = OFPort.of(portnumber);
+        FlowFactory.setLanport(lanport);
+        log.warn("Set lanport to {}", portnumber);
         return RandomizerReturnCode.CONFIG_SET;
     }
 
@@ -140,6 +192,7 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
     @Override
     public RandomizerReturnCode setWanPort(int portnumber) {
         wanport = OFPort.of(portnumber);
+        FlowFactory.setWanport(wanport);
         log.warn("Set wanport to {}", portnumber);
         return RandomizerReturnCode.CONFIG_SET;
     }
@@ -233,7 +286,7 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
                 }
             }
             log.info("New EAGER connection created...");
-            connections.add(new Connection(server, sw.getId(), wanport, localport, randomize));
+            connections.add(new Connection(server, sw.getId()));
             return Command.STOP;
         }
 
@@ -324,21 +377,25 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
 			/* These are defaults */
             enabled = Boolean.parseBoolean(configOptions.get("enabled"));
             randomize = Boolean.parseBoolean(configOptions.get("randomize"));
-            localport = OFPort.of(Integer.parseInt(configOptions.get("localport")));
+            lanport = OFPort.of(Integer.parseInt(configOptions.get("lanport")));
             wanport = OFPort.of(Integer.parseInt(configOptions.get("wanport")));
-
         } catch (IllegalArgumentException | NullPointerException ex) {
-            log.error("Incorrect Randomizer configuration options. Required: 'enabled', 'randomize', 'localport', 'wanport'", ex);
+            log.error("Incorrect Randomizer configuration options. Required: 'enabled', 'randomize', 'lanport', 'wanport'", ex);
             throw ex;
         }
 
         if (log.isInfoEnabled()) {
-            log.info("Initial config options: enabled:{}, randomize:{}, localport:{}, wanport:{}",
-                    new Object[]{enabled, randomize, localport, wanport});
+            log.info("Initial config options: enabled:{}, randomize:{}, lanport:{}, wanport:{}",
+                    new Object[]{enabled, randomize, lanport, wanport});
         }
 
-        updatePrefixes();
-        updateIPs();
+        FlowFactory.setRandomize(randomize);
+        FlowFactory.setWanport(wanport);
+        FlowFactory.setLanport(lanport);
+
+        //updatePrefixes();
+        //updateIPs();
+        scheduleJobs();
     }
     //endregion
     //================================================================================

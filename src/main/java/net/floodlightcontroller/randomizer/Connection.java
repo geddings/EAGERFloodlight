@@ -1,9 +1,10 @@
 package net.floodlightcontroller.randomizer;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import net.floodlightcontroller.core.IOFSwitch;
 import net.floodlightcontroller.randomizer.web.ConnectionSerializer;
+import org.projectfloodlight.openflow.protocol.OFFlowMod;
 import org.projectfloodlight.openflow.types.DatapathId;
-import org.projectfloodlight.openflow.types.OFPort;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,36 +16,26 @@ import org.slf4j.LoggerFactory;
 @JsonSerialize(using = ConnectionSerializer.class)
 public class Connection {
     private static Logger log = LoggerFactory.getLogger(Connection.class);
-    private Server server;
-    private AbstractFlow encryptflow;
-    private AbstractFlow decryptflow;
-    private AbstractFlow arpflows = null;
 
-    public Connection(Server server, DatapathId sw, OFPort wanport, OFPort localport, Boolean isRandomSide) {
+    private Server server;
+    private DatapathId sw;
+    private FlowFactory flowFactory;
+
+    public Connection(Server server, DatapathId sw) {
         this.server = server;
-        if (isRandomSide) {     //Todo install flows immediately
-            arpflows = new ArpFlowsRandom(wanport, localport, sw);
-            encryptflow = new EncryptSourceFlow(wanport, localport, sw);
-            decryptflow = new DecryptDestinationFlow(wanport, localport, sw);
-        } else {
-            //arpflows = new ArpFlowsNonRandom(wanport, localport, sw);
-            encryptflow = new EncryptDestinationFlow(wanport, localport, sw);
-            decryptflow = new DecryptSourceFlow(wanport, localport, sw);
+        this.sw = sw;
+        flowFactory = new FlowFactory(server);
+
+        IOFSwitch ofSwitch = Randomizer.switchService.getActiveSwitch(sw);
+        for (OFFlowMod flow : flowFactory.getFlowAdds()) {
+            ofSwitch.write(flow);
         }
-        log.debug("Inserting encrypt and decrypt flows for a new connection!");
-        encryptflow.insertFlow(server);
-        decryptflow.insertFlow(server);
     }
 
     public void update() {
-        log.debug("Removing encrypt and inserting encrypt and decrypt flows for an existing connection!");
-        try {
-            if (arpflows != null) arpflows.insertFlow(server);
-            //encryptflow.removeFlow(server);
-            encryptflow.insertFlow(server);
-            decryptflow.insertFlow(server);
-        } catch (Exception e) {
-            log.error("{} Yes, I do!", new Object[] {e.getMessage(), e});
+        IOFSwitch ofSwitch = Randomizer.switchService.getActiveSwitch(sw);
+        for (OFFlowMod flow : flowFactory.getFlowAdds()) {
+            ofSwitch.write(flow);
         }
     }
 
@@ -59,21 +50,22 @@ public class Connection {
 
         Connection that = (Connection) o;
 
-        return server != null ? server.equals(that.server) : that.server == null;
-
+        if (server != null ? !server.equals(that.server) : that.server != null) return false;
+        return sw != null ? sw.equals(that.sw) : that.sw == null;
     }
 
     @Override
     public int hashCode() {
-        return server != null ? server.hashCode() : 0;
+        int result = server != null ? server.hashCode() : 0;
+        result = 31 * result + (sw != null ? sw.hashCode() : 0);
+        return result;
     }
 
     @Override
     public String toString() {
-        return "RandomSideConnection{" +
+        return "Connection{" +
                 "server=" + server +
-                ", encryptflow=" + encryptflow +
-                ", decryptflow=" + decryptflow +
+                ", sw=" + sw +
                 '}';
     }
 }

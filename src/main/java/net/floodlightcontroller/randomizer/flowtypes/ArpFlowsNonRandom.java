@@ -1,6 +1,8 @@
-package net.floodlightcontroller.randomizer;
+package net.floodlightcontroller.randomizer.flowtypes;
 
 import net.floodlightcontroller.core.IOFSwitch;
+import net.floodlightcontroller.randomizer.Randomizer;
+import net.floodlightcontroller.randomizer.Server;
 import org.projectfloodlight.openflow.protocol.OFFactory;
 import org.projectfloodlight.openflow.protocol.OFFlowAdd;
 import org.projectfloodlight.openflow.protocol.action.OFAction;
@@ -23,21 +25,31 @@ import java.util.ArrayList;
 public class ArpFlowsNonRandom extends AbstractFlow {
 
     public ArpFlowsNonRandom(OFPort wanport, OFPort localport, DatapathId dpid) {
-        super(wanport, localport, dpid);
+        super(wanport, localport);
         log = LoggerFactory.getLogger(ArpFlowsNonRandom.class);
     }
 
     @Override
-    public void insertFlow(Server server) {
-        IOFSwitch sw = Randomizer.switchService.getActiveSwitch(dpid);
-        ArpReplyDecrypt.insertFlow(server, sw, localport);
-        ArpRequestEncrypt.insertFlow(server, sw, wanport);
+    Match createMatches(Server server, OFFactory factory) {
+        return null;
     }
 
     @Override
-    public void removeFlow(Server server) {
-
+    ArrayList<OFAction> createActions(Server server, OFFactory factory) {
+        return null;
     }
+
+//    @Override
+//    public void insertFlow(Server server) {
+//        IOFSwitch sw = Randomizer.switchService.getActiveSwitch(dpid);
+//        ArpReplyDecrypt.insertFlow(server, sw, localport);
+//        ArpRequestEncrypt.insertFlow(server, sw, wanport);
+//    }
+//
+//    @Override
+//    public void removeFlow(Server server) {
+//
+//    }
 
     private static class ArpRequestEncrypt {
         static void insertFlow(Server server, IOFSwitch sw, OFPort out) {

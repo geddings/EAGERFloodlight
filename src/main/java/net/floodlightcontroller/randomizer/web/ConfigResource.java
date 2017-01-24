@@ -35,7 +35,7 @@ public class ConfigResource extends ServerResource {
 
         Map<String, String> ret = new HashMap<String, String>();
         ret.put(STR_SETTING_RANDOMIZE, Boolean.toString(randomizerService.isRandom()));
-        ret.put(STR_SETTING_LOCALPORT, randomizerService.getLocalPort().toString());
+        ret.put(STR_SETTING_LOCALPORT, randomizerService.getLanPort().toString());
         ret.put(STR_SETTING_WANPORT, randomizerService.getWanPort().toString());
         return ret;
     }
@@ -64,7 +64,7 @@ public class ConfigResource extends ServerResource {
                     }
                     break;
                 case STR_SETTING_LOCALPORT:
-                    rc = randomizerService.setLocalPort((Integer) config.get(key));
+                    rc = randomizerService.setLanPort((Integer) config.get(key));
                     switch (rc) {
                         case CONFIG_SET:
                             ret.put(Code.CODE, Code.OKAY);

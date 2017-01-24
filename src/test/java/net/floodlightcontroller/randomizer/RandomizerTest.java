@@ -33,6 +33,7 @@ public class RandomizerTest extends FloodlightTestCase {
 
     protected static Logger log = LoggerFactory.getLogger(RandomizerTest.class);
     Randomizer randomizer;
+    FlowFactory flowFactory;
     FloodlightModuleContext fmc;
     protected OFPacketIn packetIn;
     protected IPacket testPacket;
@@ -43,11 +44,15 @@ public class RandomizerTest extends FloodlightTestCase {
     public void SetUp() throws Exception {
         super.setUp();
         fmc = new FloodlightModuleContext();
+
         fmc.addService(IFloodlightProviderService.class, getMockFloodlightProvider());
         fmc.addService(IDebugCounterService.class, new MockDebugCounterService());
         MockThreadPoolService tp = new MockThreadPoolService();
         fmc.addService(IThreadPoolService.class, tp);
         randomizer = new Randomizer();
+        fmc.addConfigParam(randomizer,"lanport", "1");
+        fmc.addConfigParam(randomizer,"wanport", "1");
+        fmc.addConfigParam(randomizer,"randomize", "true");
         tp.init(fmc);
         randomizer.init(fmc);
         tp.startUp(fmc);
@@ -102,7 +107,8 @@ public class RandomizerTest extends FloodlightTestCase {
         DatapathId dpid = DatapathId.of(1);
         OFPort wanport = OFPort.of(1);
         OFPort localport = OFPort.of(2);
-        randomizer.addConnection(new Connection(server, dpid, wanport, localport, Boolean.TRUE));
+        randomizer.addConnection(new Connection(server, dpid));
         randomizer.getConnections().get(0).update();
     }
+
 }
