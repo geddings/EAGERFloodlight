@@ -1,6 +1,5 @@
 package net.floodlightcontroller.randomizer;
 
-import com.sun.tools.javac.comp.Flow;
 import org.projectfloodlight.openflow.protocol.*;
 import org.projectfloodlight.openflow.protocol.action.OFAction;
 import org.projectfloodlight.openflow.protocol.match.Match;
