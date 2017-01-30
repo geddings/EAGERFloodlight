@@ -7,6 +7,7 @@ import org.projectfloodlight.openflow.types.IPv4AddressWithMask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.LocalTime;
 import java.util.Random;
 
 /**
@@ -30,7 +31,9 @@ public class Server {
         update();
     }
 
+    // FIXME: This needs to be synchronized across all instances of Floodlight. The external (fake) address needs to be the same across all Floodlights. Consider using the same seed and choosing based on time.
     public void update() {
+        generator.setSeed(LocalTime.now().toSecondOfDay());
         iPv4AddressFake = IPv4Address.of(generator.nextInt())
                 .and(prefix.getMask().not())
                 .or(prefix.getValue());

@@ -19,7 +19,7 @@ import java.util.*;
  */
 public class FlowFactory {
 
-    private enum FlowType {
+    protected enum FlowType {
         ENCRYPT, DECRYPT
     }
 
@@ -129,7 +129,7 @@ public class FlowFactory {
                 .build();
     }
 
-    private Match getMatch(RewriteFlow flow) {
+    protected Match getMatch(RewriteFlow flow) {
         Match.Builder mb = factory.buildMatch();
         mb = mb.setExact(MatchField.ETH_TYPE, flow.ethType);
 
@@ -186,7 +186,7 @@ public class FlowFactory {
         return factory.actions().buildOutput().setMaxLen(0xFFffFFff).setPort(port).build();
     }
 
-    private class RewriteFlow {
+    protected static class RewriteFlow {
         FlowType flowType;
         EthType ethType;
 

@@ -25,12 +25,10 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 
-import static org.quartz.TriggerBuilder.*;
-import static org.quartz.SimpleScheduleBuilder.*;
-import static org.quartz.DateBuilder.*;
+import static org.quartz.DateBuilder.evenMinuteDateAfterNow;
+import static org.quartz.SimpleScheduleBuilder.simpleSchedule;
+import static org.quartz.TriggerBuilder.newTrigger;
 
 /**
  * Created by geddingsbarrineau on 7/14/16.
@@ -47,15 +45,17 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
     protected static IOFSwitchService switchService;
     private static Logger log;
 
-    private List<Connection> connections;
-    private ServerManager serverManager;
+    private static List<Connection> connections;
+    private static ServerManager serverManager;
 
-    private List<IPv4AddressWithMask> prefixes;
+    private static List<IPv4AddressWithMask> prefixes;
 
     private static boolean enabled;
     private static boolean randomize;
     private static OFPort lanport;
     private static OFPort wanport;
+    private static int addressUpdateInterval;
+    private static int prefixUpdateInterval;
 
     //endregion
     //================================================================================
@@ -63,28 +63,6 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
 
     //================================================================================
     //region Helper Functions
-
-    private void updateIPs() {
-        ScheduledFuture<?> ipFuture = executorService.scheduleAtFixedRate(() -> {
-            log.debug("Updating IP addresses for each server. Flows will be updated as well.");
-            try {
-                serverManager.updateServers();
-                connections.forEach(Connection::update);
-            } catch (Exception e) {
-                log.error("{} Yes, I do!!!", new Object[] {e.getMessage(), e});
-            }
-        }, 0L, 10L, TimeUnit.SECONDS);
-
-    }
-
-    private void updatePrefixes() {
-        ScheduledFuture<?> prefixFuture = executorService.scheduleAtFixedRate(() -> {
-            // FIXME: THIS IS ONLY TEMPORARY AND WILL NOT SCALE AT ALL
-            log.debug("Updating prefixes for each server.");
-            serverManager.getServers().forEach(server -> server
-                    .setPrefix(prefixes.get(LocalDateTime.now().getMinute() % prefixes.size())));
-        }, 0L, 1L, TimeUnit.MINUTES);
-    }
 
     private void scheduleJobs() {
         SchedulerFactory schedulerFactory = new org.quartz.impl.StdSchedulerFactory();
@@ -99,7 +77,7 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
                 .withIdentity("trigger8") // because group is not specified, "trigger8" will be in the default group
                 .startAt(evenMinuteDateAfterNow()) // get the next even-minute (seconds zero ("**:00"))
                 .withSchedule(simpleSchedule()
-                        .withIntervalInSeconds(15)
+                        .withIntervalInSeconds(prefixUpdateInterval)
                         .repeatForever())
                 // note that in this example, 'forJob(..)' is not called
                 //  - which is valid if the trigger is passed to the scheduler along with the job
@@ -113,7 +91,7 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
                 .withIdentity("trigger9") // because group is not specified, "trigger8" will be in the default group
                 .startAt(evenMinuteDateAfterNow()) // get the next even-minute (seconds zero ("**:00"))
                 .withSchedule(simpleSchedule()
-                        .withIntervalInSeconds(5)
+                        .withIntervalInSeconds(addressUpdateInterval)
                         .repeatForever())
                 // note that in this example, 'forJob(..)' is not called
                 //  - which is valid if the trigger is passed to the scheduler along with the job
@@ -131,6 +109,28 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
             }
         } catch (SchedulerException e) {
             e.printStackTrace();
+        }
+    }
+
+    public static class AddressUpdateJob implements Job {
+        Logger log = LoggerFactory.getLogger(AddressUpdateJob.class);
+
+        @Override
+        public void execute(JobExecutionContext jobExecutionContext) throws JobExecutionException {
+            log.debug("Updating IP addresses for each server. Flows will be updated as well.");
+            serverManager.updateServers();
+            connections.forEach(Connection::update);
+        }
+    }
+
+    public static class PrefixUpdateJob implements Job {
+        Logger log = LoggerFactory.getLogger(PrefixUpdateJob.class);
+
+        @Override
+        public void execute(JobExecutionContext jobExecutionContext) throws JobExecutionException {
+            log.debug("Updating prefixes for each server.");
+            serverManager.getServers().forEach(server -> server
+                    .setPrefix(prefixes.get(LocalDateTime.now().getMinute() % prefixes.size())));
         }
     }
 
@@ -167,6 +167,7 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
     @Override
     public RandomizerReturnCode setRandom(Boolean random) {
         randomize = random;
+        FlowFactory.setRandomize(randomize);
         log.warn("Set randomize to {}", random);
         return RandomizerReturnCode.CONFIG_SET;
     }
@@ -254,7 +255,7 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
             return Command.CONTINUE;
         } else {
             /*
-			 * Randomizer is enabled; proceed
+             * Randomizer is enabled; proceed
 			 */
             log.trace("Randomizer enabled. Inspecting packet to see if it's a candidate for randomization.");
         }
@@ -379,6 +380,8 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
             randomize = Boolean.parseBoolean(configOptions.get("randomize"));
             lanport = OFPort.of(Integer.parseInt(configOptions.get("lanport")));
             wanport = OFPort.of(Integer.parseInt(configOptions.get("wanport")));
+            addressUpdateInterval = Integer.parseInt(configOptions.get("addressUpdateIntervalInSeconds"));
+            prefixUpdateInterval = Integer.parseInt(configOptions.get("prefixUpdateIntervalInSeconds"));
         } catch (IllegalArgumentException | NullPointerException ex) {
             log.error("Incorrect Randomizer configuration options. Required: 'enabled', 'randomize', 'lanport', 'wanport'", ex);
             throw ex;

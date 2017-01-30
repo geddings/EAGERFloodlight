@@ -33,7 +33,6 @@ public class RandomizerTest extends FloodlightTestCase {
 
     protected static Logger log = LoggerFactory.getLogger(RandomizerTest.class);
     Randomizer randomizer;
-    FlowFactory flowFactory;
     FloodlightModuleContext fmc;
     protected OFPacketIn packetIn;
     protected IPacket testPacket;
