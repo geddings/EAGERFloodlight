@@ -11,7 +11,6 @@ import org.restlet.routing.Router;
  */
 public class RandomizerWebRoutable implements RestletRoutable {
     protected static final String STR_OPERATION = "operation";
-    protected static final String STR_SCOPE = "scope";
 
     @Override
     public Router getRestlet(Context context) {
@@ -21,8 +20,7 @@ public class RandomizerWebRoutable implements RestletRoutable {
         router.attach("/config/json", ConfigResource.class);
         router.attach("/info/json", InfoResource.class);
         router.attach("/connections/json", ConnectionsResource.class);
-        router.attach("/prefix/{" + STR_SCOPE + "}/json", PrefixResource.class);    // Only GET
-        router.attach("/prefix/{" + STR_OPERATION + "}/json", PrefixResource.class);    // Only PUT and POST
+        router.attach("/prefix/{" + STR_OPERATION + "}/json", PrefixResource.class);
         return router;
     }
 

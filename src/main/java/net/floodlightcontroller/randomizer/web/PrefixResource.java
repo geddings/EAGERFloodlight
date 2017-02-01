@@ -33,17 +33,13 @@ public class PrefixResource extends ServerResource {
     @Get
     public Object getPrefixes() {
         IRandomizerService randomizerService = (IRandomizerService) getContext().getAttributes().get(IRandomizerService.class.getCanonicalName());
-        String scope = (String) getRequestAttributes().get("scope");
+        String operation = (String) getRequestAttributes().get("operation");
         
-        if (getRequestAttributes().containsKey("operation")) {
-            return Collections.singletonMap("ERROR", "Prefix operation must be in either a PUT or POST message");
-        }
-        
-        if (scope.equals(STR_CURRENT)) {
+        if (operation.equals(STR_CURRENT)) {
             return Collections.singletonMap("current-prefix", randomizerService.getCurrentPrefix().toString());
         }
         
-        if (scope.equals(STR_ALL)) {
+        if (operation.equals(STR_ALL)) {
             
             return Collections.singletonMap("all-prefixes", randomizerService.getPrefixes().stream()
                     .map(IPAddressWithMask::toString)
@@ -59,10 +55,6 @@ public class PrefixResource extends ServerResource {
     public Object addPrefixes(String json) {
         IRandomizerService randomizerService = (IRandomizerService) getContext().getAttributes().get(IRandomizerService.class.getCanonicalName());
         String operation = (String) getRequestAttributes().get("operation");
-
-        if (getRequestAttributes().containsKey("scope")) {
-            return Collections.singletonMap("ERROR", "Prefix scope must only be in a GET message");
-        }
         
         if (operation.equals(STR_OPERATION_ADD)) {
             randomizerService.addPrefix(parsePrefixFromJson(json));
