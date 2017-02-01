@@ -73,6 +73,12 @@ public interface IRandomizerService extends IFloodlightService {
     RandomizerReturnCode removeConnection(Connection connection);
 
     IPv4AddressWithMask getCurrentPrefix();
+    
+    List<IPv4AddressWithMask> getPrefixes();
+    
+    void addPrefix(IPv4AddressWithMask prefix);
+    
+    void removePrefix(IPv4AddressWithMask prefix);
 
     enum RandomizerReturnCode {
         WHITELIST_ENTRY_ADDED, WHITELIST_ENTRY_REMOVED,

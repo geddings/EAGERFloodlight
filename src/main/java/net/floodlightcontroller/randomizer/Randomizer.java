@@ -238,6 +238,24 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
     public IPv4AddressWithMask getCurrentPrefix() {
         return prefixes.get(LocalDateTime.now().getMinute() % prefixes.size());
     }
+    
+    public List<IPv4AddressWithMask> getPrefixes() {
+        return prefixes;
+    }
+
+    @Override
+    public void addPrefix(IPv4AddressWithMask prefix) {
+        if (!prefixes.contains(prefix)) {
+            prefixes.add(prefix);
+        }
+    }
+
+    @Override
+    public void removePrefix(IPv4AddressWithMask prefix) {
+        if (prefixes.contains(prefix)) {
+            prefixes.remove(prefix);
+        }
+    }
 
     //endregion
     //================================================================================
