@@ -32,7 +32,7 @@ public class PrefixResource extends ServerResource {
         }
         
         if (scope.equals(STR_CURRENT)) {
-            return Collections.singletonMap("current-prefix", randomizerService.getCurrentPrefix());
+            return Collections.singletonMap("current-prefix", randomizerService.getCurrentPrefix().toString());
         }
         
         if (scope.equals(STR_ALL)) {
