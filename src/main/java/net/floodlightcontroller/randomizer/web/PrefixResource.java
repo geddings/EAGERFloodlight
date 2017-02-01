@@ -1,6 +1,7 @@
 package net.floodlightcontroller.randomizer.web;
 
 import net.floodlightcontroller.randomizer.IRandomizerService;
+import org.projectfloodlight.openflow.types.IPAddressWithMask;
 import org.projectfloodlight.openflow.types.IPv4AddressWithMask;
 import org.restlet.resource.Get;
 import org.restlet.resource.Post;
@@ -9,6 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
+import java.util.stream.Collectors;
 
 /**
  * Created by geddingsbarrineau on 2/1/17.
@@ -36,7 +38,11 @@ public class PrefixResource extends ServerResource {
         }
         
         if (scope.equals(STR_ALL)) {
-            return Collections.singletonMap("all-prefixes", randomizerService.getPrefixes());
+            
+            return Collections.singletonMap("all-prefixes", randomizerService.getPrefixes().stream()
+                    .map(IPAddressWithMask::toString)
+                    .collect(Collectors.toList()));
+                    
         }
         
         return Collections.singletonMap("ERROR", "Unimplemented configuration option");
