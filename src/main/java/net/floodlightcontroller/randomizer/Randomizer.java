@@ -378,11 +378,10 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
         prefixes = new ArrayList<IPv4AddressWithMask>();
 
         /* Add prefixes here */
-        prefixes.add(IPv4AddressWithMask.of("30.0.0.0/24"));
-        prefixes.add(IPv4AddressWithMask.of("40.0.0.0/24"));
+        prefixes.add(IPv4AddressWithMask.of("184.164.243.0/24"));
 
         /* Add servers here */
-        serverManager.addServer(new Server(IPv4Address.of(20, 0, 0, 4), IPv4AddressWithMask.NONE));
+        serverManager.addServer(new Server(IPv4Address.of(10, 0, 0, 1), IPv4AddressWithMask.NONE));
     }
 
     @Override
