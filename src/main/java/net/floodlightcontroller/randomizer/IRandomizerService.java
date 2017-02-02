@@ -1,6 +1,7 @@
 package net.floodlightcontroller.randomizer;
 
 import net.floodlightcontroller.core.module.IFloodlightService;
+import org.projectfloodlight.openflow.types.IPv4Address;
 import org.projectfloodlight.openflow.types.IPv4AddressWithMask;
 import org.projectfloodlight.openflow.types.OFPort;
 
@@ -59,7 +60,9 @@ public interface IRandomizerService extends IFloodlightService {
     OFPort getWanPort();
 
     RandomizerReturnCode setWanPort(int portnumber);
-
+    
+    Server getServer(IPv4Address serveraddress);
+    
     List<Server> getServers();
 
     RandomizerReturnCode addServer(Server server);

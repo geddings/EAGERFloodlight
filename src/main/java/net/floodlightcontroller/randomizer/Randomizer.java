@@ -197,6 +197,11 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
         log.warn("Set wanport to {}", portnumber);
         return RandomizerReturnCode.CONFIG_SET;
     }
+    
+    @Override
+    public Server getServer(IPv4Address serveraddress) {
+        return serverManager.getServer(serveraddress);
+    }
 
     @Override
     public List<Server> getServers() {
