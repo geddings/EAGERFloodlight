@@ -10,6 +10,7 @@ import net.floodlightcontroller.core.module.IFloodlightService;
 import net.floodlightcontroller.devicemanager.IDeviceService;
 import net.floodlightcontroller.forwarding.Forwarding;
 import net.floodlightcontroller.linkdiscovery.internal.LinkDiscoveryManager;
+import net.floodlightcontroller.packet.ARP;
 import net.floodlightcontroller.packet.Ethernet;
 import net.floodlightcontroller.packet.IPv4;
 import net.floodlightcontroller.randomizer.web.RandomizerWebRoutable;
@@ -285,21 +286,21 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
         OFPacketIn pi = (OFPacketIn) msg;
         OFPort inPort = (pi.getVersion().compareTo(OFVersion.OF_12) < 0 ? pi.getInPort() : pi.getMatch().get(MatchField.IN_PORT));
         Ethernet l2 = IFloodlightProviderService.bcStore.get(cntx, IFloodlightProviderService.CONTEXT_PI_PAYLOAD);
+        Server server;
         if (l2.getEtherType() == EthType.IPv4) {
             IPv4 l3 = (IPv4) l2.getPayload();
-
-            Server server;
+            
             /* Packet is coming from client to the servers fake IP on the randomized side*/
             if ((server = serverManager.getServerThatContainsIP(l3.getDestinationAddress())) != null) {
-                log.debug("Packet destined for a randomized server's fake prefix found...");
+                log.debug("IPv4 packet destined for a randomized server's external prefix found: {}", server);
             }
             /* Packet is coming from the non-randomized client side (probably initiation) */
             else if ((server = serverManager.getServer(l3.getDestinationAddress())) != null) {
-                log.debug("Packet destined for a randomized server's real IP found...");
+                log.debug("IPv4 packet destined for a randomized server's internal IP found: {}", server);
             }
             /* Packet is unrelated to any randomized server connection */
             else {
-                log.debug("Neither source nor destination IPv4 addresses matches a server. Continuing...");
+                log.debug("IPv4 packet not destined for a randomized server. Continuing...");
                 return Command.CONTINUE;
             }
 
@@ -312,6 +313,28 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
             log.info("New EAGER connection created...");
             connections.add(new Connection(server, sw.getId()));
             return Command.STOP;
+        } else if (l2.getEtherType() == EthType.ARP) {
+            ARP arp = (ARP) l2.getPayload();
+            
+            if ((server = serverManager.getServerThatContainsIP(arp.getTargetProtocolAddress())) != null) {
+                log.debug("ARP packet destined for a randomized server's external prefix found: {}", server);
+            }
+            else if((server = serverManager.getServer(arp.getTargetProtocolAddress())) != null) {
+                log.debug("ARP packet destined for a randomized server's internal IP found: {}", server);
+            }
+            else {
+                log.debug("ARP packet not destined for a randomized server. Continuing...");
+                return Command.CONTINUE;
+            }
+
+            for (Connection c : connections) {
+                if (c.getServer().equals(server)) {
+                    log.error("ERROR! Received packet that belongs to an existing connection...");
+                    return Command.STOP;
+                }
+            }
+            log.info("New EAGER connection created...");
+            connections.add(new Connection(server, sw.getId()));
         }
 
         return Command.CONTINUE;
