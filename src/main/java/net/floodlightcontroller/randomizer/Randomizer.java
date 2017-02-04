@@ -323,7 +323,7 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
                 log.debug("ARP packet destined for a randomized server's internal IP found: {}", server);
             }
             else {
-                log.debug("ARP packet not destined for a randomized server. Continuing...");
+                log.trace("ARP packet not destined for a randomized server. Continuing...");
                 return Command.CONTINUE;
             }
 
