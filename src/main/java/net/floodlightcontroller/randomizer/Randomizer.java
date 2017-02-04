@@ -316,7 +316,7 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
         } else if (l2.getEtherType() == EthType.ARP) {
             ARP arp = (ARP) l2.getPayload();
             
-            if ((server = serverManager.getServerThatContainsIP(arp.getTargetProtocolAddress())) != null) {
+            if ((server = serverManager.getServerFromFakeIP(arp.getTargetProtocolAddress())) != null) {
                 log.debug("ARP packet destined for a randomized server's external prefix found: {}", server);
             }
             else if((server = serverManager.getServer(arp.getTargetProtocolAddress())) != null) {
