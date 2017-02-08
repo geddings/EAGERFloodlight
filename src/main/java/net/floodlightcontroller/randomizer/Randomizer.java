@@ -22,10 +22,10 @@ import org.quartz.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.stream.Collectors;
 
 import static org.quartz.DateBuilder.evenMinuteDateAfterNow;
 import static org.quartz.SimpleScheduleBuilder.simpleSchedule;
@@ -48,8 +48,6 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
 
     private static List<Connection> connections;
     private static ServerManager serverManager;
-
-    private static List<IPv4AddressWithMask> prefixes;
 
     private static boolean enabled;
     private static boolean randomize;
@@ -130,8 +128,7 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
         @Override
         public void execute(JobExecutionContext jobExecutionContext) throws JobExecutionException {
             log.debug("Updating prefixes for each server.");
-            serverManager.getServers().forEach(server -> server
-                    .setPrefix(prefixes.get(LocalDateTime.now().getMinute() % prefixes.size())));
+            serverManager.getServers().forEach(Server::updatePrefix);
         }
     }
 
@@ -241,25 +238,27 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
     }
 
     @Override
-    public IPv4AddressWithMask getCurrentPrefix() {
-        return prefixes.get(LocalDateTime.now().getMinute() % prefixes.size());
+    public Map<IPv4Address, IPv4AddressWithMask> getCurrentPrefix() {
+        return serverManager.getServers().stream()
+                .collect(Collectors.toMap(Server::getiPv4AddressReal, Server::getPrefix));
     }
     
-    public List<IPv4AddressWithMask> getPrefixes() {
-        return prefixes;
+    public Map<IPv4Address, List<IPv4AddressWithMask>> getPrefixes() {
+        return serverManager.getServers().stream()
+                .collect(Collectors.toMap(Server::getiPv4AddressReal, Server::getPrefixes));
     }
 
     @Override
-    public void addPrefix(IPv4AddressWithMask prefix) {
-        if (!prefixes.contains(prefix)) {
-            prefixes.add(prefix);
+    public void addPrefix(Server server, IPv4AddressWithMask prefix) {
+        if (!server.getPrefixes().contains(prefix)) {
+            server.addPrefix(prefix);
         }
     }
 
     @Override
-    public void removePrefix(IPv4AddressWithMask prefix) {
-        if (prefixes.contains(prefix)) {
-            prefixes.remove(prefix);
+    public void removePrefix(Server server, IPv4AddressWithMask prefix) {
+        if (server.getPrefixes().contains(prefix)) {
+            server.removePrefix(prefix);
         }
     }
 
@@ -403,13 +402,13 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
 
         connections = new ArrayList<Connection>();
         serverManager = new ServerManager();
-        prefixes = new ArrayList<IPv4AddressWithMask>();
 
         /* Add prefixes here */
-        prefixes.add(IPv4AddressWithMask.of("184.164.243.0/24"));
+        //prefixes.add(IPv4AddressWithMask.of("184.164.243.0/24"));
 
         /* Add servers here */
-        serverManager.addServer(new Server(IPv4Address.of(10, 0, 0, 1), IPv4AddressWithMask.NONE));
+        serverManager.addServer(new Server(IPv4Address.of(10, 0, 0, 1)));
+        serverManager.addServer(new Server(IPv4Address.of(20, 0, 0, 1)));
     }
 
     @Override

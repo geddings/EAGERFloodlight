@@ -6,6 +6,7 @@ import org.projectfloodlight.openflow.types.IPv4AddressWithMask;
 import org.projectfloodlight.openflow.types.OFPort;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by geddingsbarrineau on 9/19/16.
@@ -75,13 +76,13 @@ public interface IRandomizerService extends IFloodlightService {
 
     RandomizerReturnCode removeConnection(Connection connection);
 
-    IPv4AddressWithMask getCurrentPrefix();
+    Map<IPv4Address, IPv4AddressWithMask> getCurrentPrefix();
+
+    Map<IPv4Address, List<IPv4AddressWithMask>> getPrefixes();
     
-    List<IPv4AddressWithMask> getPrefixes();
+    void addPrefix(Server server, IPv4AddressWithMask prefix);
     
-    void addPrefix(IPv4AddressWithMask prefix);
-    
-    void removePrefix(IPv4AddressWithMask prefix);
+    void removePrefix(Server server, IPv4AddressWithMask prefix);
 
     enum RandomizerReturnCode {
         WHITELIST_ENTRY_ADDED, WHITELIST_ENTRY_REMOVED,

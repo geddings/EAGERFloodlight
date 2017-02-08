@@ -27,8 +27,7 @@ public class ServerResource extends org.restlet.resource.ServerResource {
     protected static final String STR_OPERATION_ADD = "add";
     protected static final String STR_OPERATION_REMOVE = "remove";
 
-    protected static final String STR_IP = "ip-address";
-    protected static final String STR_PREFIX = "prefix";
+    protected static final String STR_SERVER = "server";
 
     @Get
     public Object getServers() {
@@ -91,8 +90,7 @@ public class ServerResource extends org.restlet.resource.ServerResource {
     /**
      * Expect JSON:
      * {
-     * 		"ip-address"	:	"valid-ip-address",
-     * 		"seed"		    :	"seed-for-RNG",
+     * 		"server"	:	"valid-ip-address",
      * }
      *
      * @param json
@@ -131,19 +129,13 @@ public class ServerResource extends org.restlet.resource.ServerResource {
                 String value = jp.getText().toLowerCase().trim();
                 if (value.isEmpty() || key.isEmpty()) {
                     continue;
-                } else if (key.equals(STR_IP)) {
+                } else if (key.equals(STR_SERVER)) {
                     try {
                         ip = IPv4Address.of(value);
                     } catch (IllegalArgumentException e) {
                         log.error("Invalid IPv4 address {}", value);
                     }
-                } else if (key.equals(STR_PREFIX)) {
-                    try {
-                        prefix = IPv4AddressWithMask.of(value);
-                    } catch (IllegalArgumentException e) {
-                        log.error("Invalid prefix {}", value);
-                    }
-                }
+                } 
             }
         } catch (IOException e) {
             log.error("Error parsing JSON into Server {}", e);
@@ -151,7 +143,7 @@ public class ServerResource extends org.restlet.resource.ServerResource {
 
         if (!ip.equals(IPv4Address.NONE)
                 && !prefix.equals(IPv4AddressWithMask.NONE)) {
-            return new Server(ip, prefix);
+            return new Server(ip);
         } else {
             return null;
         }

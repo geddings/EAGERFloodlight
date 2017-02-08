@@ -5,7 +5,7 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.MappingJsonFactory;
 import net.floodlightcontroller.randomizer.IRandomizerService;
-import org.projectfloodlight.openflow.types.IPAddressWithMask;
+import net.floodlightcontroller.randomizer.Server;
 import org.projectfloodlight.openflow.types.IPv4Address;
 import org.projectfloodlight.openflow.types.IPv4AddressWithMask;
 import org.restlet.resource.Get;
@@ -16,7 +16,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Collections;
-import java.util.stream.Collectors;
 
 /**
  * Created by geddingsbarrineau on 2/1/17.
@@ -36,15 +35,11 @@ public class PrefixResource extends ServerResource {
         String operation = (String) getRequestAttributes().get("operation");
         
         if (operation.equals(STR_CURRENT)) {
-            return Collections.singletonMap("current-prefix", randomizerService.getCurrentPrefix().toString());
+            return randomizerService.getCurrentPrefix();
         }
         
         if (operation.equals(STR_ALL)) {
-            
-            return Collections.singletonMap("all-prefixes", randomizerService.getPrefixes().stream()
-                    .map(IPAddressWithMask::toString)
-                    .collect(Collectors.toList()));
-                    
+            return randomizerService.getPrefixes();
         }
         
         return Collections.singletonMap("ERROR", "Unimplemented configuration option");
@@ -57,12 +52,12 @@ public class PrefixResource extends ServerResource {
         String operation = (String) getRequestAttributes().get("operation");
         
         if (operation.equals(STR_OPERATION_ADD)) {
-            randomizerService.addPrefix(parsePrefixFromJson(json));
+            randomizerService.addPrefix(parseServerFromJson(json), parsePrefixFromJson(json));
             return Collections.singletonMap("SUCCESS", "Prefix added!");
         }
         
         if (operation.equals(STR_OPERATION_REMOVE)) {
-            randomizerService.removePrefix(parsePrefixFromJson(json));
+            randomizerService.removePrefix(parseServerFromJson(json), parsePrefixFromJson(json));
             return Collections.singletonMap("SUCCESS", "Prefix removed!");
         }
 
@@ -81,6 +76,7 @@ public class PrefixResource extends ServerResource {
      */
     protected static final String STR_IP = "ip-address";
     protected static final String STR_MASK = "mask";
+    protected static final String STR_SERVER = "server";
     
     private static IPv4AddressWithMask parsePrefixFromJson(String json) {
         MappingJsonFactory f = new MappingJsonFactory();
@@ -140,5 +136,57 @@ public class PrefixResource extends ServerResource {
             return null;
         }
     }
-    
+
+    private static Server parseServerFromJson(String json) {
+        MappingJsonFactory f = new MappingJsonFactory();
+        JsonParser jp;
+
+        IPv4Address ip = IPv4Address.NONE;
+        IPv4AddressWithMask prefix = IPv4AddressWithMask.NONE;
+
+        if (json == null || json.isEmpty()) {
+            return null;
+        }
+
+        try {
+            try {
+                jp = f.createParser(json);
+            } catch (JsonParseException e) {
+                throw new IOException(e);
+            }
+
+            jp.nextToken();
+            if (jp.getCurrentToken() != JsonToken.START_OBJECT) {
+                throw new IOException("Expected START_OBJECT");
+            }
+
+            while (jp.nextToken() != JsonToken.END_OBJECT) {
+                if (jp.getCurrentToken() != JsonToken.FIELD_NAME) {
+                    throw new IOException("Expected FIELD_NAME");
+                }
+
+                String key = jp.getCurrentName().toLowerCase().trim();
+                jp.nextToken();
+                String value = jp.getText().toLowerCase().trim();
+                if (value.isEmpty() || key.isEmpty()) {
+                    continue;
+                } else if (key.equals(STR_SERVER)) {
+                    try {
+                        ip = IPv4Address.of(value);
+                    } catch (IllegalArgumentException e) {
+                        log.error("Invalid IPv4 address {}", value);
+                    }
+                }
+            }
+        } catch (IOException e) {
+            log.error("Error parsing JSON into Server {}", e);
+        }
+
+        if (!ip.equals(IPv4Address.NONE)
+                && !prefix.equals(IPv4AddressWithMask.NONE)) {
+            return new Server(ip);
+        } else {
+            return null;
+        }
+    }
 }

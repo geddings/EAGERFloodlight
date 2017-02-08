@@ -7,7 +7,10 @@ import org.projectfloodlight.openflow.types.IPv4AddressWithMask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 /**
@@ -21,23 +24,40 @@ public class Server {
     private IPv4Address iPv4AddressReal;
     private IPv4Address iPv4AddressFake;
 
+    private List<IPv4AddressWithMask> prefixes;
     private IPv4AddressWithMask prefix;
     private Random generator;
 
-    public Server(IPv4Address iPv4AddressReal, IPv4AddressWithMask prefix) {
+    public Server(IPv4Address iPv4AddressReal, List<IPv4AddressWithMask> prefixes) {
         this.iPv4AddressReal = iPv4AddressReal;
-        this.prefix = prefix;
+        this.prefixes = prefixes;
         generator = new Random();
+        updatePrefix();
+        update();
+    }
+    
+    public Server(IPv4Address iPv4AddressReal) {
+        this.iPv4AddressReal = iPv4AddressReal;
+        prefixes = new ArrayList<>();
+        generator = new Random();
+        updatePrefix();
         update();
     }
 
-    // FIXME: This needs to be synchronized across all instances of Floodlight. The external (fake) address needs to be the same across all Floodlights. Consider using the same seed and choosing based on time.
     public void update() {
         generator.setSeed(LocalTime.now().toSecondOfDay());
         iPv4AddressFake = IPv4Address.of(generator.nextInt())
                 .and(prefix.getMask().not())
                 .or(prefix.getValue());
         log.debug("New fake address: {}", iPv4AddressFake);
+    }
+    
+    public void updatePrefix() {
+        if (!prefixes.isEmpty()) {
+            prefix = prefixes.get(LocalDateTime.now().getMinute() % prefixes.size());
+        } else {
+            prefix = IPv4AddressWithMask.NONE;
+        }
     }
 
     public IPv4Address getiPv4AddressReal() {
@@ -52,9 +72,21 @@ public class Server {
         return prefix;
     }
 
-    public void setPrefix(IPv4AddressWithMask prefix) {
-        this.prefix = prefix;
-        log.debug("New prefix: {}", prefix);
+//    public void setPrefix(IPv4AddressWithMask prefix) {
+//        this.prefix = prefix;
+//        log.debug("New prefix: {}", prefix);
+//    }
+    
+    public void addPrefix(IPv4AddressWithMask prefix) {
+        prefixes.add(prefix);
+    }
+    
+    public void removePrefix(IPv4AddressWithMask prefix) {
+        prefixes.remove(prefix);
+    }
+    
+    public List<IPv4AddressWithMask> getPrefixes() {
+        return prefixes;
     }
 
     @Override
