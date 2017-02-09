@@ -28,9 +28,10 @@ public class InfoResource extends ServerResource {
     }
 
     @Get
-    public Map<String, String> getEAGERInfo() {
+    public Object getEAGERInfo() {
         IRandomizerService randomizerService = (IRandomizerService) getContext().getAttributes().get(IRandomizerService.class.getCanonicalName());
         Map<String, String> ret = new HashMap<>();
+        // FIXME: This is broken with the new prefixes implementation
         ret.put("current-prefix", randomizerService.getCurrentPrefix().toString());
         return ret;
     }
