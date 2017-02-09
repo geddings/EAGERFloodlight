@@ -45,7 +45,7 @@ public class Server {
     }
 
     public void update() {
-        generator.setSeed(LocalTime.now().toSecondOfDay());
+        generator.setSeed(LocalTime.now().toSecondOfDay() % iPv4AddressReal.getInt());
         iPv4AddressFake = IPv4Address.of(generator.nextInt())
                 .and(prefix.getMask().not())
                 .or(prefix.getValue());
