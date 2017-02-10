@@ -250,15 +250,17 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
 
     @Override
     public void addPrefix(Server server, IPv4AddressWithMask prefix) {
-        if (!server.getPrefixes().contains(prefix)) {
-            server.addPrefix(prefix);
+        if (!serverManager.getServer(server.getiPv4AddressReal()).getPrefixes().contains(prefix)) {
+            // TODO: This can be simplified a ton.
+            serverManager.getServer(server.getiPv4AddressReal()).addPrefix(prefix);
         }
     }
 
     @Override
     public void removePrefix(Server server, IPv4AddressWithMask prefix) {
-        if (server.getPrefixes().contains(prefix)) {
-            server.removePrefix(prefix);
+        if (serverManager.getServer(server.getiPv4AddressReal()).getPrefixes().contains(prefix)) {
+            // TODO: This can also be simplified a lot.
+            serverManager.getServer(server.getiPv4AddressReal()).removePrefix(prefix);
         }
     }
 

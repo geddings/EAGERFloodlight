@@ -96,7 +96,7 @@ public class RandomizerTest extends FloodlightTestCase {
     @Test
     public void testAddServers() throws Exception {
         int size = randomizer.getServers().size();
-        randomizer.addServer(new Server(IPv4Address.of(10,0,0,50), IPv4AddressWithMask.NONE));
+        randomizer.addServer(new Server(IPv4Address.of(10,0,0,50)));
         Assert.assertEquals(size + 1, randomizer.getServers().size());
     }
 

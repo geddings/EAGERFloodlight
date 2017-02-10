@@ -11,7 +11,6 @@ import org.projectfloodlight.openflow.protocol.match.Match;
 import org.projectfloodlight.openflow.protocol.match.MatchField;
 import org.projectfloodlight.openflow.types.EthType;
 import org.projectfloodlight.openflow.types.IPv4Address;
-import org.projectfloodlight.openflow.types.IPv4AddressWithMask;
 
 /**
  * Created by geddingsbarrineau on 1/27/17.
@@ -26,7 +25,7 @@ public class FlowFactoryTest extends FloodlightTestCase {
     public void SetUp() throws Exception {
         super.setUp();
         
-        server = new Server(IPv4Address.of(20, 0, 0, 4), IPv4AddressWithMask.NONE);
+        server = new Server(IPv4Address.of(20, 0, 0, 4));
         ff = new FlowFactory(server);
         factory = OFFactories.getFactory(OFVersion.OF_13);
     }

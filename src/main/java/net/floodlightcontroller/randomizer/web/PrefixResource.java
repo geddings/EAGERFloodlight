@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.stream.Collectors;
 
 /**
  * Created by geddingsbarrineau on 2/1/17.
@@ -28,34 +29,40 @@ public class PrefixResource extends ServerResource {
     protected static final String STR_OPERATION_REMOVE = "remove";
     
     /* TODO: Add more error checking here */
-    
+
     @Get
     public Object getPrefixes() {
         IRandomizerService randomizerService = (IRandomizerService) getContext().getAttributes().get(IRandomizerService.class.getCanonicalName());
         String operation = (String) getRequestAttributes().get("operation");
-        
+
         if (operation.equals(STR_CURRENT)) {
             return randomizerService.getCurrentPrefix();
         }
-        
+
         if (operation.equals(STR_ALL)) {
-            return randomizerService.getPrefixes();
+//            return Collections.singletonMap("all-prefixes", randomizerService.getPrefixes().
+//                    .map(IPAddressWithMask::toString)
+//                    .collect(Collectors.toList()));
+            return randomizerService.getPrefixes().entrySet()
+                    .stream()
+                    .collect(Collectors.toMap(e -> e.getKey(),
+                            e -> e.getValue().toString()));
         }
-        
+
         return Collections.singletonMap("ERROR", "Unimplemented configuration option");
     }
-    
+
     @Put
     @Post
     public Object addPrefixes(String json) {
         IRandomizerService randomizerService = (IRandomizerService) getContext().getAttributes().get(IRandomizerService.class.getCanonicalName());
         String operation = (String) getRequestAttributes().get("operation");
-        
+
         if (operation.equals(STR_OPERATION_ADD)) {
             randomizerService.addPrefix(parseServerFromJson(json), parsePrefixFromJson(json));
             return Collections.singletonMap("SUCCESS", "Prefix added!");
         }
-        
+
         if (operation.equals(STR_OPERATION_REMOVE)) {
             randomizerService.removePrefix(parseServerFromJson(json), parsePrefixFromJson(json));
             return Collections.singletonMap("SUCCESS", "Prefix removed!");
@@ -67,8 +74,8 @@ public class PrefixResource extends ServerResource {
     /**
      * Expect JSON:
      * {
-     * 		"ip-address"	:	"valid-ip-address",
-     * 	    "mask"          :   "valid-ip-address"	
+     * "ip-address"	:	"valid-ip-address",
+     * "mask"          :   "valid-ip-address"
      * }
      *
      * @param json
@@ -77,14 +84,14 @@ public class PrefixResource extends ServerResource {
     protected static final String STR_IP = "ip-address";
     protected static final String STR_MASK = "mask";
     protected static final String STR_SERVER = "server";
-    
+
     private static IPv4AddressWithMask parsePrefixFromJson(String json) {
         MappingJsonFactory f = new MappingJsonFactory();
         JsonParser jp;
 
         IPv4Address ip = IPv4Address.NONE;
         IPv4Address mask = IPv4Address.NO_MASK;
-        
+
         if (json == null || json.isEmpty()) {
             return null;
         }
@@ -123,7 +130,7 @@ public class PrefixResource extends ServerResource {
                     } catch (IllegalArgumentException e) {
                         log.error("Invalid IPv4 address for mask {}", value);
                     }
-                } 
+                }
             }
         } catch (IOException e) {
             log.error("Error parsing JSON into Server {}", e);
@@ -182,8 +189,7 @@ public class PrefixResource extends ServerResource {
             log.error("Error parsing JSON into Server {}", e);
         }
 
-        if (!ip.equals(IPv4Address.NONE)
-                && !prefix.equals(IPv4AddressWithMask.NONE)) {
+        if (!ip.equals(IPv4Address.NONE)) {
             return new Server(ip);
         } else {
             return null;

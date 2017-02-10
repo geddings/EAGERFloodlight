@@ -8,7 +8,6 @@ import org.projectfloodlight.openflow.protocol.OFFactories;
 import org.projectfloodlight.openflow.protocol.OFFactory;
 import org.projectfloodlight.openflow.protocol.OFVersion;
 import org.projectfloodlight.openflow.types.IPv4Address;
-import org.projectfloodlight.openflow.types.IPv4AddressWithMask;
 
 /**
  * Created by geddingsbarrineau on 2/2/17.
@@ -23,7 +22,7 @@ public class ServerManagerTest extends FloodlightTestCase{
     public void SetUp() throws Exception {
         super.setUp();
         sm = new ServerManager();
-        server = new Server(IPv4Address.of(10, 0, 0, 4), IPv4AddressWithMask.of("184.164.243.0/24"));
+        server = new Server(IPv4Address.of(10, 0, 0, 4));
         sm.addServer(server);
         factory = OFFactories.getFactory(OFVersion.OF_13);
     }
