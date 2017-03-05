@@ -141,8 +141,7 @@ public class ServerResource extends org.restlet.resource.ServerResource {
             log.error("Error parsing JSON into Server {}", e);
         }
 
-        if (!ip.equals(IPv4Address.NONE)
-                && !prefix.equals(IPv4AddressWithMask.NONE)) {
+        if (!ip.equals(IPv4Address.NONE)) {
             return new Server(ip);
         } else {
             return null;

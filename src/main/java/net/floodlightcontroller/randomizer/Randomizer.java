@@ -1,6 +1,5 @@
 package net.floodlightcontroller.randomizer;
 
-import ch.qos.logback.classic.Level;
 import net.floodlightcontroller.core.*;
 import net.floodlightcontroller.core.internal.IOFSwitchService;
 import net.floodlightcontroller.core.module.FloodlightModuleContext;
@@ -8,8 +7,6 @@ import net.floodlightcontroller.core.module.FloodlightModuleException;
 import net.floodlightcontroller.core.module.IFloodlightModule;
 import net.floodlightcontroller.core.module.IFloodlightService;
 import net.floodlightcontroller.devicemanager.IDeviceService;
-import net.floodlightcontroller.forwarding.Forwarding;
-import net.floodlightcontroller.linkdiscovery.internal.LinkDiscoveryManager;
 import net.floodlightcontroller.packet.ARP;
 import net.floodlightcontroller.packet.Ethernet;
 import net.floodlightcontroller.packet.IPv4;
@@ -301,7 +298,7 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
             }
             /* Packet is unrelated to any randomized server connection */
             else {
-                log.debug("IPv4 packet not destined for a randomized server. Continuing...");
+                log.debug("IPv4 packet address {} is not destined for a randomized server. Continuing...", l3.getDestinationAddress());
                 return Command.CONTINUE;
             }
 
@@ -324,7 +321,7 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
                 log.debug("ARP packet destined for a randomized server's internal IP found: {}", server);
             }
             else {
-                log.trace("ARP packet not destined for a randomized server. Continuing...");
+                log.trace("ARP packet address {} is not destined for a randomized server. Continuing...", arp.getTargetProtocolAddress());
                 return Command.CONTINUE;
             }
 
@@ -336,6 +333,8 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
             }
             log.info("New EAGER connection created...");
             connections.add(new Connection(server, sw.getId()));
+        } else {
+            log.debug("Packet isn't ARP or IPv4. Continuing...");
         }
 
         return Command.CONTINUE;
@@ -398,9 +397,9 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
         log = LoggerFactory.getLogger(Randomizer.class);
 
         /* For testing only: Set log levels of other classes */
-        ((ch.qos.logback.classic.Logger) log).setLevel(Level.DEBUG);
-        ((ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Forwarding.class)).setLevel(Level.ERROR);
-        ((ch.qos.logback.classic.Logger) LoggerFactory.getLogger(LinkDiscoveryManager.class)).setLevel(Level.ERROR);
+//        ((ch.qos.logback.classic.Logger) log).setLevel(Level.DEBUG);
+//        ((ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Forwarding.class)).setLevel(Level.ERROR);
+//        ((ch.qos.logback.classic.Logger) LoggerFactory.getLogger(LinkDiscoveryManager.class)).setLevel(Level.ERROR);
 
         connections = new ArrayList<Connection>();
         serverManager = new ServerManager();
@@ -409,8 +408,8 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
         //prefixes.add(IPv4AddressWithMask.of("184.164.243.0/24"));
 
         /* Add servers here */
-        serverManager.addServer(new Server(IPv4Address.of(10, 0, 0, 1)));
-        serverManager.addServer(new Server(IPv4Address.of(20, 0, 0, 1)));
+        //serverManager.addServer(new Server(IPv4Address.of(10, 0, 0, 1)));
+        //serverManager.addServer(new Server(IPv4Address.of(20, 0, 0, 1)));
     }
 
     @Override
