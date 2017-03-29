@@ -29,5 +29,4 @@ version:             1.0.0
 github:
   repo:              https://github.com/cbarrin/EAGERFloodlight
 
-exclude:
-  - web
+exclude: ['_web', 'bower_components']
