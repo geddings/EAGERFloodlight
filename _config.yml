@@ -1,5 +1,5 @@
 # Dependencies
-#gems:                [jekyll-paginate]
+gems:                [jekyll-paginate]
 markdown:            kramdown
 highlighter:         rouge
 
