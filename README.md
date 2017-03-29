@@ -62,17 +62,17 @@ To best demonstrate the extent to which constructing and working with OpenFlow c
 ```java
 ArrayList<OFAction> actions = new ArrayList<OFAction>();
 actions.add(myFactory.actions().buildOutput() // builder pattern used throughout
-.setPort(OFPort.of(1)) // raw types replaced with objects for type-checking and readability
-.build()); // list of immutable OFAction objects
+    .setPort(OFPort.of(1)) // raw types replaced with objects for type-checking and readability
+    .build()); // list of immutable OFAction objects
 OFFlowAdd flow = myFactory.buildFlowAdd()
-.setMatch(myfactory.buildMatch()
-.setExact(MatchField.IN_PORT, OFPort.of(1)) // type-checked matching
-.setExact(MatchField.ETH_TYPE, EthType.IPv4))
-.build()) // immutable Match object
-.setActions(actions)
-.setOutPort(OFPort.of(2))
-.setBufferId(OFBufferId.NO_BUFFER)
-.build(); // immutable OFFlowMod; no lengths to set; no wildcards to set
+    .setMatch(myfactory.buildMatch()
+    .setExact(MatchField.IN_PORT, OFPort.of(1)) // type-checked matching
+    .setExact(MatchField.ETH_TYPE, EthType.IPv4))
+    .build()) // immutable Match object
+    .setActions(actions)
+    .setOutPort(OFPort.of(2))
+    .setBufferId(OFBufferId.NO_BUFFER)
+    .build(); // immutable OFFlowMod; no lengths to set; no wildcards to set
 sw.write(flow);
 ```
     
