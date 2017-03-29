@@ -59,22 +59,22 @@ To best demonstrate the extent to which constructing and working with OpenFlow c
 
 **Floodlight v1.0, v1.1, v1.2 -- the new and improved way to compose an OFFlowMod**
 
-    ```java
-    ArrayList<OFAction> actions = new ArrayList<OFAction>();
-    actions.add(myFactory.actions().buildOutput() // builder pattern used throughout
-    .setPort(OFPort.of(1)) // raw types replaced with objects for type-checking and readability
-    .build()); // list of immutable OFAction objects
-    OFFlowAdd flow = myFactory.buildFlowAdd()
-    .setMatch(myfactory.buildMatch()
-    .setExact(MatchField.IN_PORT, OFPort.of(1)) // type-checked matching
-    .setExact(MatchField.ETH_TYPE, EthType.IPv4))
-    .build()) // immutable Match object
-    .setActions(actions)
-    .setOutPort(OFPort.of(2))
-    .setBufferId(OFBufferId.NO_BUFFER)
-    .build(); // immutable OFFlowMod; no lengths to set; no wildcards to set
-    sw.write(flow);
-    ```
+```java
+ArrayList<OFAction> actions = new ArrayList<OFAction>();
+actions.add(myFactory.actions().buildOutput() // builder pattern used throughout
+.setPort(OFPort.of(1)) // raw types replaced with objects for type-checking and readability
+.build()); // list of immutable OFAction objects
+OFFlowAdd flow = myFactory.buildFlowAdd()
+.setMatch(myfactory.buildMatch()
+.setExact(MatchField.IN_PORT, OFPort.of(1)) // type-checked matching
+.setExact(MatchField.ETH_TYPE, EthType.IPv4))
+.build()) // immutable Match object
+.setActions(actions)
+.setOutPort(OFPort.of(2))
+.setBufferId(OFBufferId.NO_BUFFER)
+.build(); // immutable OFFlowMod; no lengths to set; no wildcards to set
+sw.write(flow);
+```
     
 
 Some of the concepts above will be discussed further below, but the major items to note are the use of the builder design pattern for ease-of-use and the production of immutable objects, the use of objects instead of raw types to enforce type-safe coding and to produce more readable code, built-in wildcarding, and finally there is no need to deal with message lengths.
