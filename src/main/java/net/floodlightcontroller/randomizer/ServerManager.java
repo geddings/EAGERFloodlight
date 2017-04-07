@@ -7,7 +7,7 @@ import java.util.List;
 
 /**
  * Created by geddingsbarrineau on 9/14/16.
- *
+ * <p>
  * This is the server manager for the EAGER project.
  */
 public class ServerManager {
@@ -30,9 +30,11 @@ public class ServerManager {
         serverList.add(server);
     }
 
-    public void removeServer(Server server) { serverList.remove(server); }
+    public void removeServer(Server server) {
+        serverList.remove(server);
+    }
 
-    public Server getServer(IPv4Address ip) {
+    public Server getServerFromRealIP(IPv4Address ip) {
         for (Server s : serverList) {
             if (s.getiPv4AddressReal().equals(ip)) return s;
         }
@@ -49,6 +51,14 @@ public class ServerManager {
     public Server getServerThatContainsIP(IPv4Address ip) {
         for (Server s : serverList) {
             if (s.getPrefix().contains(ip)) return s;
+        }
+        return null;
+    }
+    
+    public Server getServer(IPv4Address ip) {
+        for (Server s : serverList) {
+            if (s.getiPv4AddressReal().equals(ip)) return s;
+            else if (s.getiPv4AddressFake().equals(ip)) return s;
         }
         return null;
     }

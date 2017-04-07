@@ -106,7 +106,7 @@ public class RandomizerTest extends FloodlightTestCase {
         DatapathId dpid = DatapathId.of(1);
         OFPort wanport = OFPort.of(1);
         OFPort localport = OFPort.of(2);
-        randomizer.addConnection(new Connection(server, dpid));
+        randomizer.addConnection(new Connection(server, , , dpid));
         randomizer.getConnections().get(0).update();
     }
 

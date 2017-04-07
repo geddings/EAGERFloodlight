@@ -31,7 +31,7 @@ public class FlowFactory {
     private int idletimeout = 30;
     private int flowpriority = 32768;
 
-    private Server server;
+    private Connection connection;
 
     /* Experimental stuff */
     public static boolean isRandomize() {
@@ -59,8 +59,8 @@ public class FlowFactory {
     }
 
 
-    FlowFactory(Server server) {
-        this.server = server;
+    FlowFactory(Connection connection) {
+        this.connection = connection;
     }
 
     // FIXME: This needs to be refactored to return the specific OFFlowAdd type.
@@ -71,11 +71,11 @@ public class FlowFactory {
     /**
      * Given a server, this function returns a list of flows to be inserted on the switch.
      * This list of flows should contain all encrypt and decrypt flows for ARP and IP.
-     * @param flowModCommand
+     * @param flowModCommand The flow mod command that you want to create flows for e.g. Add, Delete, etc.
      * @return list of flowMods
      */
     // TODO: We are assuming OpenFlow 1.3 right now. This should be extended to handle any version.
-    List<OFFlowMod> getFlows(OFFlowModCommand flowModCommand) {
+    private List<OFFlowMod> getFlows(OFFlowModCommand flowModCommand) {
         List<OFFlowMod> flows = new ArrayList<>();
 
         flows.addAll(getEncryptFlows(flowModCommand));
@@ -137,7 +137,9 @@ public class FlowFactory {
 
         boolean encrypt = (flow.flowType == FlowType.ENCRYPT);
         if (flow.ethType == EthType.IPv4) {
-            mf = (Boolean.logicalXor(randomize, encrypt)) ? MatchField.IPV4_DST : MatchField.IPV4_SRC;
+            mb = mb.setExact(MatchField.IPV4_SRC, getMatchIPAddress(flow.flowType));
+            mb = mb.setExact(MatchField.IPV4_DST, getMatchIPAddress(flow.flowType));
+            //mf = (Boolean.logicalXor(randomize, encrypt)) ? MatchField.IPV4_DST : MatchField.IPV4_SRC;
         }
         else if (flow.ethType == EthType.ARP) {
             mf = (Boolean.logicalXor(randomize, encrypt)) ? MatchField.ARP_TPA : MatchField.ARP_SPA;
@@ -186,7 +188,7 @@ public class FlowFactory {
         return factory.actions().buildOutput().setMaxLen(0xFFffFFff).setPort(port).build();
     }
 
-    protected static class RewriteFlow {
+    static class RewriteFlow {
         FlowType flowType;
         EthType ethType;
 

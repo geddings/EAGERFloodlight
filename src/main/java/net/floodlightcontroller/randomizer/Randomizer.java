@@ -195,10 +195,10 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
         log.warn("Set wanport to {}", portnumber);
         return RandomizerReturnCode.CONFIG_SET;
     }
-    
+
     @Override
     public Server getServer(IPv4Address serveraddress) {
-        return serverManager.getServer(serveraddress);
+        return serverManager.getServerFromRealIP(serveraddress);
     }
 
     @Override
@@ -242,7 +242,7 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
         return serverManager.getServers().stream()
                 .collect(Collectors.toMap(Server::getiPv4AddressReal, Server::getPrefix));
     }
-    
+
     public Map<IPv4Address, List<IPv4AddressWithMask>> getPrefixes() {
         return serverManager.getServers().stream()
                 .collect(Collectors.toMap(Server::getiPv4AddressReal, Server::getPrefixes));
@@ -250,17 +250,17 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
 
     @Override
     public void addPrefix(Server server, IPv4AddressWithMask prefix) {
-        if (!serverManager.getServer(server.getiPv4AddressReal()).getPrefixes().contains(prefix)) {
+        if (!serverManager.getServerFromRealIP(server.getiPv4AddressReal()).getPrefixes().contains(prefix)) {
             // TODO: This can be simplified a ton.
-            serverManager.getServer(server.getiPv4AddressReal()).addPrefix(prefix);
+            serverManager.getServerFromRealIP(server.getiPv4AddressReal()).addPrefix(prefix);
         }
     }
 
     @Override
     public void removePrefix(Server server, IPv4AddressWithMask prefix) {
-        if (serverManager.getServer(server.getiPv4AddressReal()).getPrefixes().contains(prefix)) {
+        if (serverManager.getServerFromRealIP(server.getiPv4AddressReal()).getPrefixes().contains(prefix)) {
             // TODO: This can also be simplified a lot.
-            serverManager.getServer(server.getiPv4AddressReal()).removePrefix(prefix);
+            serverManager.getServerFromRealIP(server.getiPv4AddressReal()).removePrefix(prefix);
         }
     }
 
@@ -287,59 +287,59 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
         OFPacketIn pi = (OFPacketIn) msg;
         OFPort inPort = (pi.getVersion().compareTo(OFVersion.OF_12) < 0 ? pi.getInPort() : pi.getMatch().get(MatchField.IN_PORT));
         Ethernet l2 = IFloodlightProviderService.bcStore.get(cntx, IFloodlightProviderService.CONTEXT_PI_PAYLOAD);
-        Server server;
-        if (l2.getEtherType() == EthType.IPv4) {
-            IPv4 l3 = (IPv4) l2.getPayload();
-            
-            /* Packet is coming from client to the servers fake IP on the randomized side*/
-            if ((server = serverManager.getServerThatContainsIP(l3.getDestinationAddress())) != null) {
-                log.debug("IPv4 packet destined for a randomized server's external prefix found: {}", server);
-            }
-            /* Packet is coming from the non-randomized client side (probably initiation) */
-            else if ((server = serverManager.getServer(l3.getDestinationAddress())) != null) {
-                log.debug("IPv4 packet destined for a randomized server's internal IP found: {}", server);
-            }
-            /* Packet is unrelated to any randomized server connection */
-            else {
-                log.debug("IPv4 packet not destined for a randomized server. Continuing...");
-                return Command.CONTINUE;
-            }
 
-            for (Connection c : connections) {
-                if (c.getServer().equals(server)) {
-                    log.error("ERROR! Received packet that belongs to an existing connection...");
-                    return Command.STOP;
-                }
-            }
-            log.info("New EAGER connection created...");
-            connections.add(new Connection(server, sw.getId()));
+        if (packetBelongsToExistingConnection(l2)) {
             return Command.STOP;
-        } else if (l2.getEtherType() == EthType.ARP) {
-            ARP arp = (ARP) l2.getPayload();
-            
-            if ((server = serverManager.getServerFromFakeIP(arp.getTargetProtocolAddress())) != null) {
-                log.debug("ARP packet destined for a randomized server's external prefix found: {}", server);
-            }
-            else if((server = serverManager.getServer(arp.getTargetProtocolAddress())) != null) {
-                log.debug("ARP packet destined for a randomized server's internal IP found: {}", server);
-            }
-            else {
-                log.trace("ARP packet not destined for a randomized server. Continuing...");
-                return Command.CONTINUE;
-            }
-
-            for (Connection c : connections) {
-                if (c.getServer().equals(server)) {
-                    log.error("ERROR! Received packet that belongs to an existing connection...");
-                    return Command.STOP;
-                }
-            }
-            log.info("New EAGER connection created...");
-            connections.add(new Connection(server, sw.getId()));
         }
-
+        
+        Connection connection = createConnectionFromPacket(l2, sw, inPort);
+        
+        if (connection != null) {
+            connections.add(connection);
+            return Command.STOP;
+        }
+        
         return Command.CONTINUE;
     }
+
+    private boolean packetBelongsToExistingConnection(Ethernet l2) {
+        EthType ethType = l2.getEtherType();
+        Connection connection = createConnectionFromPacket(l2, null, null);
+
+        for (Connection c : connections) {
+            if (c.equals(connection)) return true;
+        }
+
+        return false;
+    }
+
+    private Connection createConnectionFromPacket(Ethernet l2, IOFSwitch sw, OFPort inPort) {
+        EthType ethType = l2.getEtherType();
+        Server source = null;
+        Server destination = null;
+        Connection.Direction direction = null;
+
+        if (inPort != null) direction = inPort.equals(wanport)
+                ? Connection.Direction.INCOMING
+                : Connection.Direction.OUTGOING;
+
+        if (ethType == EthType.IPv4) {
+            IPv4 l3 = (IPv4) l2.getPayload();
+            source = serverManager.getServer(l3.getSourceAddress());
+            destination = serverManager.getServer(l3.getDestinationAddress());
+        } else if (l2.getEtherType() == EthType.ARP) {
+            ARP arp = (ARP) l2.getPayload();
+            source = serverManager.getServer(arp.getSenderProtocolAddress();
+            destination = serverManager.getServer(arp.getTargetProtocolAddress();
+        }
+
+        if (source == null || destination == null) {
+            return null;
+        } else {
+            return new Connection(source, destination, direction, sw.getId());
+        }
+    }
+
 
     @Override
     public String getName() {
@@ -421,7 +421,7 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
 
         Map<String, String> configOptions = context.getConfigParams(this);
         try {
-			/* These are defaults */
+            /* These are defaults */
             enabled = Boolean.parseBoolean(configOptions.get("enabled"));
             randomize = Boolean.parseBoolean(configOptions.get("randomize"));
             lanport = OFPort.of(Integer.parseInt(configOptions.get("lanport")));

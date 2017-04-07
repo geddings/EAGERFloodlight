@@ -17,30 +17,48 @@ import org.slf4j.LoggerFactory;
 public class Connection {
     private static Logger log = LoggerFactory.getLogger(Connection.class);
 
-    private Server server;
+    private Server source;
+    private Server destination;
     private DatapathId sw;
     private FlowFactory flowFactory;
+    private Direction direction;
 
-    public Connection(Server server, DatapathId sw) {
-        this.server = server;
+    public Connection(Server source, Server destination, Direction direction, DatapathId sw) {
+        this.source = source;
+        this.destination = destination;
+        this.direction = direction;
         this.sw = sw;
-        flowFactory = new FlowFactory(server);
+        
+        flowFactory = new FlowFactory(this);
 
         IOFSwitch ofSwitch = Randomizer.switchService.getActiveSwitch(sw);
-        for (OFFlowMod flow : flowFactory.getFlowAdds()) {
-            ofSwitch.write(flow);
+        if (ofSwitch != null) {
+            for (OFFlowMod flow : flowFactory.getFlowAdds()) {
+                ofSwitch.write(flow);
+            }
         }
     }
 
     public void update() {
         IOFSwitch ofSwitch = Randomizer.switchService.getActiveSwitch(sw);
-        for (OFFlowMod flow : flowFactory.getFlowAdds()) {
-            ofSwitch.write(flow);
+        if (ofSwitch != null) {
+            for (OFFlowMod flow : flowFactory.getFlowAdds()) {
+                ofSwitch.write(flow);
+            }
         }
     }
 
-    public Server getServer() {
-        return server;
+    public Server getSource() {
+        return source;
+    }
+    
+    public Server getDestination() {
+        return destination;
+    }
+    
+    public Direction getDirection() {
+
+        return direction;
     }
 
     @Override
@@ -50,22 +68,27 @@ public class Connection {
 
         Connection that = (Connection) o;
 
-        if (server != null ? !server.equals(that.server) : that.server != null) return false;
-        return sw != null ? sw.equals(that.sw) : that.sw == null;
+        if (source != null ? !source.equals(that.source) : that.source != null) return false;
+        return destination != null ? destination.equals(that.destination) : that.destination == null;
     }
 
     @Override
     public int hashCode() {
-        int result = server != null ? server.hashCode() : 0;
-        result = 31 * result + (sw != null ? sw.hashCode() : 0);
+        int result = source != null ? source.hashCode() : 0;
+        result = 31 * result + (destination != null ? destination.hashCode() : 0);
         return result;
     }
 
     @Override
     public String toString() {
         return "Connection{" +
-                "server=" + server +
-                ", sw=" + sw +
+                "source=" + source +
+                ", destination=" + destination +
+                ", direction=" + direction +
                 '}';
+    }
+
+    public enum Direction {
+        INCOMING, OUTGOING
     }
 }

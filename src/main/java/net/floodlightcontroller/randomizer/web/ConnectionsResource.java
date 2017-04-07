@@ -119,7 +119,7 @@ public class ConnectionsResource extends ServerResource {
         if (!serverIp.equals(IPv4Address.NONE)
                 && !swId.equals(DatapathId.NONE)
                 && server != null) {
-            return new Connection(server, swId);
+            return new Connection(server, , , swId);
         } else {
             return null;
         }
