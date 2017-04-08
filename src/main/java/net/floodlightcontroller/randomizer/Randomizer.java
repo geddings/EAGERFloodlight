@@ -240,27 +240,27 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
     @Override
     public Map<IPv4Address, IPv4AddressWithMask> getCurrentPrefix() {
         return serverManager.getServers().stream()
-                .collect(Collectors.toMap(Server::getiPv4AddressReal, Server::getPrefix));
+                .collect(Collectors.toMap(Server::getInternalIP, Server::getPrefix));
     }
 
     public Map<IPv4Address, List<IPv4AddressWithMask>> getPrefixes() {
         return serverManager.getServers().stream()
-                .collect(Collectors.toMap(Server::getiPv4AddressReal, Server::getPrefixes));
+                .collect(Collectors.toMap(Server::getInternalIP, Server::getPrefixes));
     }
 
     @Override
     public void addPrefix(Server server, IPv4AddressWithMask prefix) {
-        if (!serverManager.getServerFromRealIP(server.getiPv4AddressReal()).getPrefixes().contains(prefix)) {
+        if (!serverManager.getServerFromRealIP(server.getInternalIP()).getPrefixes().contains(prefix)) {
             // TODO: This can be simplified a ton.
-            serverManager.getServerFromRealIP(server.getiPv4AddressReal()).addPrefix(prefix);
+            serverManager.getServerFromRealIP(server.getInternalIP()).addPrefix(prefix);
         }
     }
 
     @Override
     public void removePrefix(Server server, IPv4AddressWithMask prefix) {
-        if (serverManager.getServerFromRealIP(server.getiPv4AddressReal()).getPrefixes().contains(prefix)) {
+        if (serverManager.getServerFromRealIP(server.getInternalIP()).getPrefixes().contains(prefix)) {
             // TODO: This can also be simplified a lot.
-            serverManager.getServerFromRealIP(server.getiPv4AddressReal()).removePrefix(prefix);
+            serverManager.getServerFromRealIP(server.getInternalIP()).removePrefix(prefix);
         }
     }
 
@@ -279,22 +279,22 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
             log.trace("Randomizer disabled. Not acting on packet; passing to next module.");
             return Command.CONTINUE;
         } else {
-            /*
-             * Randomizer is enabled; proceed
-			 */
             log.trace("Randomizer enabled. Inspecting packet to see if it's a candidate for randomization.");
         }
+        
         OFPacketIn pi = (OFPacketIn) msg;
         OFPort inPort = (pi.getVersion().compareTo(OFVersion.OF_12) < 0 ? pi.getInPort() : pi.getMatch().get(MatchField.IN_PORT));
         Ethernet l2 = IFloodlightProviderService.bcStore.get(cntx, IFloodlightProviderService.CONTEXT_PI_PAYLOAD);
 
         if (packetBelongsToExistingConnection(l2)) {
+            log.error("Packet belongs to an existing connection: {}", l2);
             return Command.STOP;
         }
         
         Connection connection = createConnectionFromPacket(l2, sw, inPort);
         
         if (connection != null) {
+            log.info("New connection added: {}", connection);
             connections.add(connection);
             return Command.STOP;
         }
@@ -329,8 +329,8 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
             destination = serverManager.getServer(l3.getDestinationAddress());
         } else if (l2.getEtherType() == EthType.ARP) {
             ARP arp = (ARP) l2.getPayload();
-            source = serverManager.getServer(arp.getSenderProtocolAddress();
-            destination = serverManager.getServer(arp.getTargetProtocolAddress();
+            source = serverManager.getServer(arp.getSenderProtocolAddress());
+            destination = serverManager.getServer(arp.getTargetProtocolAddress());
         }
 
         if (source == null || destination == null) {

@@ -25,8 +25,8 @@ public class ServerSerializer extends JsonSerializer<Server> {
             return;
         }
         jGen.writeStartObject();
-        jGen.writeStringField("ip-address-real", server.getiPv4AddressReal().toString());
-        jGen.writeStringField("ip-address-fake", server.getiPv4AddressFake().toString());
+        jGen.writeStringField("ip-address-real", server.getInternalIP().toString());
+        jGen.writeStringField("ip-address-fake", server.getExternalIP().toString());
         jGen.writeStringField("prefix", server.getPrefix().toString());
         jGen.writeObjectField("prefixes", server.getPrefixes().stream().map(IPAddressWithMask::toString).collect(Collectors.toList()));
         jGen.writeEndObject();

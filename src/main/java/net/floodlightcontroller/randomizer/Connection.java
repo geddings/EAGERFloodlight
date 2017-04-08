@@ -17,13 +17,13 @@ import org.slf4j.LoggerFactory;
 public class Connection {
     private static Logger log = LoggerFactory.getLogger(Connection.class);
 
-    private Server source;
-    private Server destination;
+    private Host source;
+    private Host destination;
     private DatapathId sw;
     private FlowFactory flowFactory;
     private Direction direction;
 
-    public Connection(Server source, Server destination, Direction direction, DatapathId sw) {
+    public Connection(Host source, Host destination, Direction direction, DatapathId sw) {
         this.source = source;
         this.destination = destination;
         this.direction = direction;
@@ -48,11 +48,11 @@ public class Connection {
         }
     }
 
-    public Server getSource() {
+    public Host getSource() {
         return source;
     }
     
-    public Server getDestination() {
+    public Host getDestination() {
         return destination;
     }
     

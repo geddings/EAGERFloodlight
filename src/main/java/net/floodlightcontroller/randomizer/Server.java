@@ -15,29 +15,28 @@ import java.util.Random;
 
 /**
  * Created by geddingsbarrineau on 8/31/16.
- *
+ * <p>
  * This is a Server object for the EAGER project.
  */
 @JsonSerialize(using = ServerSerializer.class)
-public class Server {
+public class Server extends Host {
     private static Logger log = LoggerFactory.getLogger(Server.class);
-    private IPv4Address iPv4AddressReal;
-    private IPv4Address iPv4AddressFake;
+    private IPv4Address externalIP;
 
     private List<IPv4AddressWithMask> prefixes;
     private IPv4AddressWithMask prefix;
     private Random generator;
 
-    public Server(IPv4Address iPv4AddressReal, List<IPv4AddressWithMask> prefixes) {
-        this.iPv4AddressReal = iPv4AddressReal;
+    public Server(IPv4Address internalIP, List<IPv4AddressWithMask> prefixes) {
+        super(internalIP, true);
         this.prefixes = prefixes;
         generator = new Random();
         updatePrefix();
         update();
     }
-    
+
     public Server(IPv4Address iPv4AddressReal) {
-        this.iPv4AddressReal = iPv4AddressReal;
+        super(iPv4AddressReal, true);
         prefixes = new ArrayList<>();
         generator = new Random();
         updatePrefix();
@@ -45,13 +44,13 @@ public class Server {
     }
 
     public void update() {
-        generator.setSeed(LocalTime.now().toSecondOfDay() % iPv4AddressReal.getInt());
-        iPv4AddressFake = IPv4Address.of(generator.nextInt())
+        generator.setSeed(LocalTime.now().toSecondOfDay() % getInternalIP().getInt());
+        externalIP = IPv4Address.of(generator.nextInt())
                 .and(prefix.getMask().not())
                 .or(prefix.getValue());
-        log.debug("New fake address: {}", iPv4AddressFake);
+        log.debug("New external address: {}", externalIP);
     }
-    
+
     public void updatePrefix() {
         if (!prefixes.isEmpty()) {
             prefix = prefixes.get(LocalDateTime.now().getMinute() % prefixes.size());
@@ -60,57 +59,31 @@ public class Server {
         }
     }
 
-    public IPv4Address getiPv4AddressReal() {
-        return iPv4AddressReal;
-    }
-
-    public IPv4Address getiPv4AddressFake() {
-        return iPv4AddressFake;
+    public IPv4Address getExternalIP() {
+        return externalIP;
     }
 
     public IPv4AddressWithMask getPrefix() {
         return prefix;
     }
 
-//    public void setPrefix(IPv4AddressWithMask prefix) {
-//        this.prefix = prefix;
-//        log.debug("New prefix: {}", prefix);
-//    }
-    
     public void addPrefix(IPv4AddressWithMask prefix) {
         prefixes.add(prefix);
     }
-    
+
     public void removePrefix(IPv4AddressWithMask prefix) {
         prefixes.remove(prefix);
     }
-    
+
     public List<IPv4AddressWithMask> getPrefixes() {
         return prefixes;
     }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        Server server = (Server) o;
-
-        return iPv4AddressReal != null ? iPv4AddressReal.equals(server.iPv4AddressReal) : server.iPv4AddressReal == null;
-
-    }
-
-    @Override
-    public int hashCode() {
-        return iPv4AddressReal != null ? iPv4AddressReal.hashCode() : 0;
-    }
-
+    
     @Override
     public String toString() {
         return "Server{" +
-                "iPv4AddressReal=" + iPv4AddressReal +
-                ", iPv4AddressFake=" + iPv4AddressFake +
+                "externalIP=" + externalIP +
                 ", prefix=" + prefix +
-                '}';
+                "} " + super.toString();
     }
 }
