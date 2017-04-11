@@ -14,7 +14,7 @@ import java.util.*;
  * The Flow Factory is intended to take all responsibility for creating
  * the correct matches and actions for all the different types of flows
  * needed for the Randomizer.
- *
+ * <p>
  * Created by geddingsbarrineau on 12/13/16.
  */
 public class FlowFactory {
@@ -71,34 +71,21 @@ public class FlowFactory {
     /**
      * Given a server, this function returns a list of flows to be inserted on the switch.
      * This list of flows should contain all encrypt and decrypt flows for ARP and IP.
-     * @param flowModCommand The flow mod command that you want to create flows for e.g. Add, Delete, etc.
+     *
+     * @param fmc The flow mod command that you want to create flows for e.g. Add, Delete, etc.
      * @return list of flowMods
      */
     // TODO: We are assuming OpenFlow 1.3 right now. This should be extended to handle any version.
-    private List<OFFlowMod> getFlows(OFFlowModCommand flowModCommand) {
+    private List<OFFlowMod> getFlows(OFFlowModCommand fmc) {
         List<OFFlowMod> flows = new ArrayList<>();
 
-        flows.addAll(getEncryptFlows(flowModCommand));
-        flows.addAll(getDecryptFlows(flowModCommand));
+        flows.add(getFlow(EthType.IPv4, fmc));
+        flows.add(getFlow(EthType.ARP, fmc));
 
         return flows;
     }
 
-    private List<OFFlowMod> getEncryptFlows(OFFlowModCommand fmc) {
-        List<OFFlowMod> encryptFlows = new ArrayList<>();
-        encryptFlows.add(getFlow(new RewriteFlow(FlowType.ENCRYPT, EthType.IPv4), fmc));
-        encryptFlows.add(getFlow(new RewriteFlow(FlowType.ENCRYPT, EthType.ARP), fmc));
-        return encryptFlows;
-    }
-
-    private List<OFFlowMod> getDecryptFlows(OFFlowModCommand fmc) {
-        List<OFFlowMod> decryptFlows = new ArrayList<>();
-        decryptFlows.add(getFlow(new RewriteFlow(FlowType.DECRYPT, EthType.IPv4), fmc));
-        decryptFlows.add(getFlow(new RewriteFlow(FlowType.DECRYPT, EthType.ARP), fmc));
-        return decryptFlows;
-    }
-
-    private OFFlowMod getFlow(RewriteFlow flow, OFFlowModCommand flowModCommand) {
+    private OFFlowMod getFlow(EthType ethType, OFFlowModCommand flowModCommand) {
         OFFlowMod.Builder fmb;
         switch (flowModCommand) {
             case ADD:
@@ -124,43 +111,37 @@ public class FlowFactory {
                 .setHardTimeout(hardtimeout)
                 .setIdleTimeout(idletimeout)
                 .setPriority(flowpriority)
-                .setMatch(getMatch(flow))
-                .setActions(getActionList(flow))
+                .setMatch(getMatch(ethType))
+                .setActions(getActionList(ethType))
                 .build();
     }
 
-    protected Match getMatch(RewriteFlow flow) {
+    protected Match getMatch(EthType ethType) {
         Match.Builder mb = factory.buildMatch();
-        mb = mb.setExact(MatchField.ETH_TYPE, flow.ethType);
+        mb = mb.setExact(MatchField.ETH_TYPE, ethType);
 
-        MatchField<IPv4Address> mf = null;
-
-        boolean encrypt = (flow.flowType == FlowType.ENCRYPT);
-        if (flow.ethType == EthType.IPv4) {
-            mb = mb.setExact(MatchField.IPV4_SRC, getMatchIPAddress(flow.flowType));
-            mb = mb.setExact(MatchField.IPV4_DST, getMatchIPAddress(flow.flowType));
-            //mf = (Boolean.logicalXor(randomize, encrypt)) ? MatchField.IPV4_DST : MatchField.IPV4_SRC;
+        if (ethType == EthType.IPv4) {
+            mb = mb.setExact(MatchField.IPV4_SRC, getMatchIPAddress(connection.getSource()));
+            mb = mb.setExact(MatchField.IPV4_DST, getMatchIPAddress(connection.getDestination()));
+        } else if (ethType == EthType.ARP) {
+            mb = mb.setExact(MatchField.ARP_SPA, getMatchIPAddress(connection.getSource()));
+            mb = mb.setExact(MatchField.ARP_TPA, getMatchIPAddress(connection.getDestination()));
         }
-        else if (flow.ethType == EthType.ARP) {
-            mf = (Boolean.logicalXor(randomize, encrypt)) ? MatchField.ARP_TPA : MatchField.ARP_SPA;
-        }
-        IPv4Address ip = getMatchIPAddress(flow.flowType);
-        mb = mb.setExact(mf, ip);
         return mb.build();
     }
 
-    private IPv4Address getMatchIPAddress(FlowType flowType) {
-        return (flowType == FlowType.ENCRYPT) ? server.getiPv4AddressReal() : server.getiPv4AddressFake();
+    private IPv4Address getMatchIPAddress(Host host) {
+        return (connection.getDirection() == Connection.Direction.INCOMING) ? host.getExternalIP() : host.getInternalIP();
     }
 
-    private List<OFAction> getActionList(RewriteFlow flow) {
+    private List<OFAction> getActionList(EthType ethType) {
         ArrayList<OFAction> actionList = new ArrayList<>();
-        actionList.add(getRewriteAction(flow));
-        actionList.add(getOutputPortAction(flow.flowType));
+        actionList.add(getRewriteAction(ethType));
+        actionList.add(getOutputPortAction());
         return actionList;
     }
 
-    private OFAction getRewriteAction(RewriteFlow flow) {
+    private OFAction getRewriteAction(EthType ethType) {
         OFOxms oxms = factory.oxms();
         OFOxm oxm = null;
         boolean encrypt = (flow.flowType == FlowType.ENCRYPT);
@@ -170,31 +151,28 @@ public class FlowFactory {
             oxm = (Boolean.logicalXor(randomize, encrypt))
                     ? oxms.buildIpv4Dst().setValue(ip).build()
                     : oxms.buildIpv4Src().setValue(ip).build();
-        }
-        else if (flow.ethType == EthType.ARP) {
+        } else if (flow.ethType == EthType.ARP) {
             oxm = (Boolean.logicalXor(randomize, encrypt))
                     ? oxms.buildArpTpa().setValue(ip).build()
                     : oxms.buildArpSpa().setValue(ip).build();
         }
         return factory.actions().buildSetField().setField(oxm).build();
     }
-
-    private IPv4Address getRewriteActionIPAddress(FlowType flowType) {
-        return (flowType == FlowType.ENCRYPT) ? server.getiPv4AddressFake() : server.getiPv4AddressReal();
-    }
-
-    private OFAction getOutputPortAction(FlowType flowType) {
-        OFPort port = (flowType == FlowType.ENCRYPT) ? wanport : lanport;
-        return factory.actions().buildOutput().setMaxLen(0xFFffFFff).setPort(port).build();
-    }
-
-    static class RewriteFlow {
-        FlowType flowType;
-        EthType ethType;
-
-        RewriteFlow(FlowType flowType, EthType ethType) {
-            this.flowType = flowType;
-            this.ethType = ethType;
+    
+    private OFOxm getRewriteAction(Host host) {
+        OFOxm oxm;
+        
+        if (host.isRandomized()) {
+            
         }
+    }
+
+    private IPv4Address getRewriteActionIPAddress(Host host) {
+        return (connection.getDirection() == Connection.Direction.INCOMING) ? host.getInternalIP() : host.getExternalIP();
+    }
+
+    private OFAction getOutputPortAction() {
+        OFPort port = (connection.getDirection() == Connection.Direction.OUTGOING) ? wanport : lanport;
+        return factory.actions().buildOutput().setMaxLen(0xFFffFFff).setPort(port).build();
     }
 }

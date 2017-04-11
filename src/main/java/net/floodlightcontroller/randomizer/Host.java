@@ -19,7 +19,9 @@ public class Host {
     public IPv4Address getInternalIP() {
         return internalIP;
     }
-
+    
+    public IPv4Address getExternalIP() { return internalIP; }
+    
     public boolean isRandomized() {
         return randomized;
     }

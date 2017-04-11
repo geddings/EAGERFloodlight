@@ -35,8 +35,8 @@ public class Server extends Host {
         update();
     }
 
-    public Server(IPv4Address iPv4AddressReal) {
-        super(iPv4AddressReal, true);
+    public Server(IPv4Address internalIP) {
+        super(internalIP, true);
         prefixes = new ArrayList<>();
         generator = new Random();
         updatePrefix();
