@@ -57,7 +57,7 @@ public class FlowFactoryTest extends FloodlightTestCase {
         FlowFactory.setRandomize(false);
         FlowFactory.RewriteFlow rewriteflow = new FlowFactory.RewriteFlow(FlowFactory.FlowType.DECRYPT, EthType.IPv4);
         Match expected = factory.buildMatch().setExact(MatchField.ETH_TYPE, EthType.IPv4)
-                .setExact(MatchField.IPV4_SRC, server.getExternalIP())
+                .setExact(MatchField.IPV4_SRC, server.getRandomizedAddress())
                 .build();
         Match actual = ff.getMatch(rewriteflow);
         Assert.assertEquals(expected, actual);
@@ -68,7 +68,7 @@ public class FlowFactoryTest extends FloodlightTestCase {
         FlowFactory.setRandomize(true);
         FlowFactory.RewriteFlow rewriteflow = new FlowFactory.RewriteFlow(FlowFactory.FlowType.DECRYPT, EthType.IPv4);
         Match expected = factory.buildMatch().setExact(MatchField.ETH_TYPE, EthType.IPv4)
-                .setExact(MatchField.IPV4_DST, server.getExternalIP())
+                .setExact(MatchField.IPV4_DST, server.getRandomizedAddress())
                 .build();
         Match actual = ff.getMatch(rewriteflow);
         Assert.assertEquals(expected, actual);

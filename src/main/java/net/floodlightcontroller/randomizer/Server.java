@@ -21,22 +21,22 @@ import java.util.Random;
 @JsonSerialize(using = ServerSerializer.class)
 public class Server extends Host {
     private static Logger log = LoggerFactory.getLogger(Server.class);
-    private IPv4Address externalIP;
+    private IPv4Address randomizedAddress;
 
     private List<IPv4AddressWithMask> prefixes;
     private IPv4AddressWithMask prefix;
     private Random generator;
 
-    public Server(IPv4Address internalIP, List<IPv4AddressWithMask> prefixes) {
-        super(internalIP, true);
+    public Server(IPv4Address address, List<IPv4AddressWithMask> prefixes) {
+        super(address);
         this.prefixes = prefixes;
         generator = new Random();
         updatePrefix();
         update();
     }
 
-    public Server(IPv4Address internalIP) {
-        super(internalIP, true);
+    public Server(IPv4Address address) {
+        super(address);
         prefixes = new ArrayList<>();
         generator = new Random();
         updatePrefix();
@@ -44,11 +44,11 @@ public class Server extends Host {
     }
 
     public void update() {
-        generator.setSeed(LocalTime.now().toSecondOfDay() % getInternalIP().getInt());
-        externalIP = IPv4Address.of(generator.nextInt())
+        generator.setSeed(LocalTime.now().toSecondOfDay() % getAddress().getInt());
+        randomizedAddress = IPv4Address.of(generator.nextInt())
                 .and(prefix.getMask().not())
                 .or(prefix.getValue());
-        log.debug("New external address: {}", externalIP);
+        log.debug("New external address: {}", randomizedAddress);
     }
 
     public void updatePrefix() {
@@ -59,8 +59,18 @@ public class Server extends Host {
         }
     }
 
-    public IPv4Address getExternalIP() {
-        return externalIP;
+    public IPv4Address getRandomizedAddress() {
+        return randomizedAddress;
+    }
+    
+    @Override
+    public IPv4Address getAddressForMatch(Connection.Direction direction) {
+        return (direction == Connection.Direction.OUTGOING) ? getAddress() : getRandomizedAddress();
+    }
+    
+    @Override
+    public IPv4Address getAddressForAction(Connection.Direction direction) {
+        return (direction == Connection.Direction.OUTGOING) ? getRandomizedAddress() : getAddress();
     }
 
     public IPv4AddressWithMask getPrefix() {
@@ -82,7 +92,7 @@ public class Server extends Host {
     @Override
     public String toString() {
         return "Server{" +
-                "externalIP=" + externalIP +
+                "randomizedAddress=" + randomizedAddress +
                 ", prefix=" + prefix +
                 "} " + super.toString();
     }

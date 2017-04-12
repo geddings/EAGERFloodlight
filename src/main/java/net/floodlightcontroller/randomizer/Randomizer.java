@@ -59,7 +59,6 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
     //endregion
     //================================================================================
 
-
     //================================================================================
     //region Helper Functions
 
@@ -240,27 +239,27 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
     @Override
     public Map<IPv4Address, IPv4AddressWithMask> getCurrentPrefix() {
         return serverManager.getServers().stream()
-                .collect(Collectors.toMap(Server::getInternalIP, Server::getPrefix));
+                .collect(Collectors.toMap(Server::getAddress, Server::getPrefix));
     }
 
     public Map<IPv4Address, List<IPv4AddressWithMask>> getPrefixes() {
         return serverManager.getServers().stream()
-                .collect(Collectors.toMap(Server::getInternalIP, Server::getPrefixes));
+                .collect(Collectors.toMap(Server::getAddress, Server::getPrefixes));
     }
 
     @Override
     public void addPrefix(Server server, IPv4AddressWithMask prefix) {
-        if (!serverManager.getServerFromRealIP(server.getInternalIP()).getPrefixes().contains(prefix)) {
+        if (!serverManager.getServerFromRealIP(server.getAddress()).getPrefixes().contains(prefix)) {
             // TODO: This can be simplified a ton.
-            serverManager.getServerFromRealIP(server.getInternalIP()).addPrefix(prefix);
+            serverManager.getServerFromRealIP(server.getAddress()).addPrefix(prefix);
         }
     }
 
     @Override
     public void removePrefix(Server server, IPv4AddressWithMask prefix) {
-        if (serverManager.getServerFromRealIP(server.getInternalIP()).getPrefixes().contains(prefix)) {
+        if (serverManager.getServerFromRealIP(server.getAddress()).getPrefixes().contains(prefix)) {
             // TODO: This can also be simplified a lot.
-            serverManager.getServerFromRealIP(server.getInternalIP()).removePrefix(prefix);
+            serverManager.getServerFromRealIP(server.getAddress()).removePrefix(prefix);
         }
     }
 

@@ -36,14 +36,14 @@ public class ServerManager {
 
     public Server getServerFromRealIP(IPv4Address ip) {
         for (Server s : serverList) {
-            if (s.getInternalIP().equals(ip)) return s;
+            if (s.getAddress().equals(ip)) return s;
         }
         return null;
     }
 
     public Server getServerFromFakeIP(IPv4Address ip) {
         for (Server s : serverList) {
-            if (s.getExternalIP().equals(ip)) return s;
+            if (s.getRandomizedAddress().equals(ip)) return s;
         }
         return null;
     }
@@ -57,8 +57,8 @@ public class ServerManager {
     
     public Server getServer(IPv4Address ip) {
         for (Server s : serverList) {
-            if (s.getInternalIP().equals(ip)) return s;
-            else if (s.getExternalIP().equals(ip)) return s;
+            if (s.getAddress().equals(ip)) return s;
+            else if (s.getRandomizedAddress().equals(ip)) return s;
         }
         return null;
     }

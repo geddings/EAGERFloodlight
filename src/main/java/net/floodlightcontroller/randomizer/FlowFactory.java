@@ -19,10 +19,6 @@ import java.util.*;
  */
 public class FlowFactory {
 
-    protected enum FlowType {
-        ENCRYPT, DECRYPT
-    }
-
     private static boolean randomize = true;
     private static OFPort wanport = OFPort.of(1);
     private static OFPort lanport = OFPort.of(2);
@@ -121,54 +117,51 @@ public class FlowFactory {
         mb = mb.setExact(MatchField.ETH_TYPE, ethType);
 
         if (ethType == EthType.IPv4) {
-            mb = mb.setExact(MatchField.IPV4_SRC, getMatchIPAddress(connection.getSource()));
-            mb = mb.setExact(MatchField.IPV4_DST, getMatchIPAddress(connection.getDestination()));
+            mb = mb.setExact(MatchField.IPV4_SRC, connection.getSource().getAddressForMatch(connection.getDirection()));
+            mb = mb.setExact(MatchField.IPV4_DST, connection.getDestination().getAddressForMatch(connection.getDirection()));
         } else if (ethType == EthType.ARP) {
-            mb = mb.setExact(MatchField.ARP_SPA, getMatchIPAddress(connection.getSource()));
-            mb = mb.setExact(MatchField.ARP_TPA, getMatchIPAddress(connection.getDestination()));
+            mb = mb.setExact(MatchField.ARP_SPA, connection.getSource().getAddressForMatch(connection.getDirection()));
+            mb = mb.setExact(MatchField.ARP_TPA, connection.getDestination().getAddressForMatch(connection.getDirection()));
         }
         return mb.build();
     }
 
-    private IPv4Address getMatchIPAddress(Host host) {
-        return (connection.getDirection() == Connection.Direction.INCOMING) ? host.getExternalIP() : host.getInternalIP();
-    }
-
     private List<OFAction> getActionList(EthType ethType) {
         ArrayList<OFAction> actionList = new ArrayList<>();
-        actionList.add(getRewriteAction(ethType));
+        actionList.addAll(getRewriteActions(ethType));
         actionList.add(getOutputPortAction());
         return actionList;
     }
 
-    private OFAction getRewriteAction(EthType ethType) {
+    private List<OFAction> getRewriteActions(EthType ethType) {
         OFOxms oxms = factory.oxms();
         OFOxm oxm = null;
-        boolean encrypt = (flow.flowType == FlowType.ENCRYPT);
+        List<OFAction> rewriteActions = new ArrayList<>();
 
-        IPv4Address ip = getRewriteActionIPAddress(flow.flowType);
-        if (flow.ethType == EthType.IPv4) {
-            oxm = (Boolean.logicalXor(randomize, encrypt))
-                    ? oxms.buildIpv4Dst().setValue(ip).build()
-                    : oxms.buildIpv4Src().setValue(ip).build();
-        } else if (flow.ethType == EthType.ARP) {
-            oxm = (Boolean.logicalXor(randomize, encrypt))
-                    ? oxms.buildArpTpa().setValue(ip).build()
-                    : oxms.buildArpSpa().setValue(ip).build();
+        IPv4Address source = connection.getSource().getAddressForAction(connection.getDirection());
+        IPv4Address destination = connection.getDestination().getAddressForAction(connection.getDirection());
+
+        if (source != null) {
+            if (ethType == EthType.IPv4) {
+                oxm = oxms.buildIpv4Src().setValue(source).build();
+                rewriteActions.add(factory.actions().buildSetField().setField(oxm).build());
+            } else if (ethType == EthType.ARP) {
+                oxm = oxms.buildArpSpa().setValue(source).build();
+                rewriteActions.add(factory.actions().buildSetField().setField(oxm).build());
+            }
         }
-        return factory.actions().buildSetField().setField(oxm).build();
-    }
-    
-    private OFOxm getRewriteAction(Host host) {
-        OFOxm oxm;
         
-        if (host.isRandomized()) {
-            
+        if (destination != null) {
+            if (ethType == EthType.IPv4) {
+                oxm = oxms.buildIpv4Dst().setValue(destination).build();
+                rewriteActions.add(factory.actions().buildSetField().setField(oxm).build());
+            } else if (ethType == EthType.ARP) {
+                oxm = oxms.buildArpTpa().setValue(destination).build();
+                rewriteActions.add(factory.actions().buildSetField().setField(oxm).build());
+            }
         }
-    }
-
-    private IPv4Address getRewriteActionIPAddress(Host host) {
-        return (connection.getDirection() == Connection.Direction.INCOMING) ? host.getInternalIP() : host.getExternalIP();
+        
+        return rewriteActions;
     }
 
     private OFAction getOutputPortAction() {
