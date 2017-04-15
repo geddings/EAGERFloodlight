@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
-import net.floodlightcontroller.randomizer.Server;
+import net.floodlightcontroller.randomizer.RandomizedHost;
 import org.projectfloodlight.openflow.types.IPAddressWithMask;
 
 import java.io.IOException;
@@ -13,22 +13,22 @@ import java.util.stream.Collectors;
 /**
  * Created by geddingsbarrineau on 10/29/16.
  */
-public class ServerSerializer extends JsonSerializer<Server> {
+public class RandomizedHostSerializer extends JsonSerializer<RandomizedHost> {
     @Override
-    public void serialize(Server server, JsonGenerator jGen, SerializerProvider sProv)
+    public void serialize(RandomizedHost randomizedHost, JsonGenerator jGen, SerializerProvider sProv)
             throws IOException, JsonProcessingException {
         jGen.configure(JsonGenerator.Feature.WRITE_NUMBERS_AS_STRINGS, true);
-        if (server == null) {
+        if (randomizedHost == null) {
             jGen.writeStartArray();
-            jGen.writeString("No EAGER server to report");
+            jGen.writeString("No EAGER randomizedHost to report");
             jGen.writeEndArray();
             return;
         }
         jGen.writeStartObject();
-        jGen.writeStringField("ip-address-real", server.getAddress().toString());
-        jGen.writeStringField("ip-address-fake", server.getRandomizedAddress().toString());
-        jGen.writeStringField("prefix", server.getPrefix().toString());
-        jGen.writeObjectField("prefixes", server.getPrefixes().stream().map(IPAddressWithMask::toString).collect(Collectors.toList()));
+        jGen.writeStringField("address", randomizedHost.getAddress().toString());
+        jGen.writeStringField("randomized-address", randomizedHost.getRandomizedAddress().toString());
+        jGen.writeStringField("prefix", randomizedHost.getPrefix().toString());
+        jGen.writeObjectField("prefixes", randomizedHost.getPrefixes().stream().map(IPAddressWithMask::toString).collect(Collectors.toList()));
         jGen.writeEndObject();
     }
 }

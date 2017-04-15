@@ -1,7 +1,7 @@
 package net.floodlightcontroller.randomizer.web;
 
 import net.floodlightcontroller.randomizer.IRandomizerService;
-import net.floodlightcontroller.randomizer.Server;
+import net.floodlightcontroller.randomizer.RandomizedHost;
 import org.restlet.resource.Get;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,11 +19,11 @@ public class InfoResource extends ServerResource {
 
     public static class InfoJsonSerializerWrapper {
         private final String prefix;
-        private final List<Server> servers;
+        private final List<RandomizedHost> randomizedHosts;
 
-        public InfoJsonSerializerWrapper(String prefix, List<Server> servers) {
+        public InfoJsonSerializerWrapper(String prefix, List<RandomizedHost> randomizedHosts) {
             this.prefix = prefix;
-            this.servers = servers;
+            this.randomizedHosts = randomizedHosts;
         }
     }
 

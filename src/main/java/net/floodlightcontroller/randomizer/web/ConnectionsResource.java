@@ -6,7 +6,7 @@ import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.MappingJsonFactory;
 import net.floodlightcontroller.randomizer.Connection;
 import net.floodlightcontroller.randomizer.IRandomizerService;
-import net.floodlightcontroller.randomizer.Server;
+import net.floodlightcontroller.randomizer.RandomizedHost;
 import org.projectfloodlight.openflow.types.DatapathId;
 import org.projectfloodlight.openflow.types.IPv4Address;
 import org.restlet.resource.Get;
@@ -68,7 +68,7 @@ public class ConnectionsResource extends ServerResource {
 
         IPv4Address serverIp = IPv4Address.NONE;
         DatapathId swId = DatapathId.NONE;
-        Server server;
+        RandomizedHost randomizedHost;
 
         if (json == null || json.isEmpty()) {
             return null;
@@ -111,15 +111,15 @@ public class ConnectionsResource extends ServerResource {
                 }
             }
         } catch (IOException e) {
-            log.error("Error parsing JSON into Server {}", e);
+            log.error("Error parsing JSON into RandomizedHost {}", e);
         }
 
-        server = randomizerService.getServer(serverIp);
+        randomizedHost = randomizerService.getServer(serverIp);
 
         if (!serverIp.equals(IPv4Address.NONE)
                 && !swId.equals(DatapathId.NONE)
-                && server != null) {
-            return new Connection(server, , , swId);
+                && randomizedHost != null) {
+            return new Connection(randomizedHost, , , swId);
         } else {
             return null;
         }

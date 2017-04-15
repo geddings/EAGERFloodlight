@@ -96,17 +96,17 @@ public class RandomizerTest extends FloodlightTestCase {
     @Test
     public void testAddServers() throws Exception {
         int size = randomizer.getServers().size();
-        randomizer.addServer(new Server(IPv4Address.of(10,0,0,50)));
+        randomizer.addServer(new RandomizedHost(IPv4Address.of(10,0,0,50)));
         Assert.assertEquals(size + 1, randomizer.getServers().size());
     }
 
     @Test
     public void testAddConnection() throws Exception {
-        Server server = randomizer.getServers().get(0);
+        RandomizedHost randomizedHost = randomizer.getServers().get(0);
         DatapathId dpid = DatapathId.of(1);
         OFPort wanport = OFPort.of(1);
         OFPort localport = OFPort.of(2);
-        randomizer.addConnection(new Connection(server, , , dpid));
+        randomizer.addConnection(new Connection(randomizedHost, , , dpid));
         randomizer.getConnections().get(0).update();
     }
 

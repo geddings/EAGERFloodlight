@@ -5,7 +5,7 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.MappingJsonFactory;
 import net.floodlightcontroller.randomizer.IRandomizerService;
-import net.floodlightcontroller.randomizer.Server;
+import net.floodlightcontroller.randomizer.RandomizedHost;
 import org.projectfloodlight.openflow.types.IPv4Address;
 import org.projectfloodlight.openflow.types.IPv4AddressWithMask;
 import org.restlet.resource.Get;
@@ -133,7 +133,7 @@ public class PrefixResource extends ServerResource {
                 }
             }
         } catch (IOException e) {
-            log.error("Error parsing JSON into Server {}", e);
+            log.error("Error parsing JSON into RandomizedHost {}", e);
         }
 
         if (!ip.equals(IPv4Address.NONE)
@@ -144,7 +144,7 @@ public class PrefixResource extends ServerResource {
         }
     }
 
-    private static Server parseServerFromJson(String json) {
+    private static RandomizedHost parseServerFromJson(String json) {
         MappingJsonFactory f = new MappingJsonFactory();
         JsonParser jp;
 
@@ -186,11 +186,11 @@ public class PrefixResource extends ServerResource {
                 }
             }
         } catch (IOException e) {
-            log.error("Error parsing JSON into Server {}", e);
+            log.error("Error parsing JSON into RandomizedHost {}", e);
         }
 
         if (!ip.equals(IPv4Address.NONE)) {
-            return new Server(ip);
+            return new RandomizedHost(ip);
         } else {
             return null;
         }

@@ -1,7 +1,7 @@
 package net.floodlightcontroller.randomizer;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import net.floodlightcontroller.randomizer.web.ServerSerializer;
+import net.floodlightcontroller.randomizer.web.RandomizedHostSerializer;
 import org.projectfloodlight.openflow.types.IPv4Address;
 import org.projectfloodlight.openflow.types.IPv4AddressWithMask;
 import org.slf4j.Logger;
@@ -16,18 +16,18 @@ import java.util.Random;
 /**
  * Created by geddingsbarrineau on 8/31/16.
  * <p>
- * This is a Server object for the EAGER project.
+ * This is a RandomizedHost object for the EAGER project.
  */
-@JsonSerialize(using = ServerSerializer.class)
-public class Server extends Host {
-    private static Logger log = LoggerFactory.getLogger(Server.class);
+@JsonSerialize(using = RandomizedHostSerializer.class)
+public class RandomizedHost extends Host {
+    private static Logger log = LoggerFactory.getLogger(RandomizedHost.class);
     private IPv4Address randomizedAddress;
 
     private List<IPv4AddressWithMask> prefixes;
     private IPv4AddressWithMask prefix;
     private Random generator;
 
-    public Server(IPv4Address address, List<IPv4AddressWithMask> prefixes) {
+    public RandomizedHost(IPv4Address address, List<IPv4AddressWithMask> prefixes) {
         super(address);
         this.prefixes = prefixes;
         generator = new Random();
@@ -35,7 +35,7 @@ public class Server extends Host {
         update();
     }
 
-    public Server(IPv4Address address) {
+    public RandomizedHost(IPv4Address address) {
         super(address);
         prefixes = new ArrayList<>();
         generator = new Random();
@@ -62,16 +62,6 @@ public class Server extends Host {
     public IPv4Address getRandomizedAddress() {
         return randomizedAddress;
     }
-    
-    @Override
-    public IPv4Address getAddressForMatch(Connection.Direction direction) {
-        return (direction == Connection.Direction.OUTGOING) ? getAddress() : getRandomizedAddress();
-    }
-    
-    @Override
-    public IPv4Address getAddressForAction(Connection.Direction direction) {
-        return (direction == Connection.Direction.OUTGOING) ? getRandomizedAddress() : getAddress();
-    }
 
     public IPv4AddressWithMask getPrefix() {
         return prefix;
@@ -91,7 +81,7 @@ public class Server extends Host {
     
     @Override
     public String toString() {
-        return "Server{" +
+        return "RandomizedHost{" +
                 "randomizedAddress=" + randomizedAddress +
                 ", prefix=" + prefix +
                 "} " + super.toString();

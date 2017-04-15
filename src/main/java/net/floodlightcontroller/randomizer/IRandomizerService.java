@@ -62,13 +62,13 @@ public interface IRandomizerService extends IFloodlightService {
 
     RandomizerReturnCode setWanPort(int portnumber);
     
-    Server getServer(IPv4Address serveraddress);
+    RandomizedHost getServer(IPv4Address serveraddress);
     
-    List<Server> getServers();
+    List<RandomizedHost> getServers();
 
-    RandomizerReturnCode addServer(Server server);
+    RandomizerReturnCode addServer(RandomizedHost randomizedHost);
 
-    RandomizerReturnCode removeServer(Server server);
+    RandomizerReturnCode removeServer(RandomizedHost randomizedHost);
 
     List<Connection> getConnections();
 
@@ -80,9 +80,9 @@ public interface IRandomizerService extends IFloodlightService {
 
     Map<IPv4Address, List<IPv4AddressWithMask>> getPrefixes();
     
-    void addPrefix(Server server, IPv4AddressWithMask prefix);
+    void addPrefix(RandomizedHost randomizedHost, IPv4AddressWithMask prefix);
     
-    void removePrefix(Server server, IPv4AddressWithMask prefix);
+    void removePrefix(RandomizedHost randomizedHost, IPv4AddressWithMask prefix);
 
     enum RandomizerReturnCode {
         WHITELIST_ENTRY_ADDED, WHITELIST_ENTRY_REMOVED,

@@ -12,25 +12,25 @@ import org.projectfloodlight.openflow.types.IPv4Address;
 /**
  * Created by geddingsbarrineau on 2/2/17.
  */
-public class ServerManagerTest extends FloodlightTestCase{
+public class HostManagerTest extends FloodlightTestCase{
 
-    Server server;
-    ServerManager sm;
+    RandomizedHost randomizedHost;
+    HostManager sm;
     OFFactory factory;
     
     @Before
     public void SetUp() throws Exception {
         super.setUp();
-        sm = new ServerManager();
-        server = new Server(IPv4Address.of(10, 0, 0, 4));
-        sm.addServer(server);
+        sm = new HostManager();
+        randomizedHost = new RandomizedHost(IPv4Address.of(10, 0, 0, 4));
+        sm.addHost(randomizedHost);
         factory = OFFactories.getFactory(OFVersion.OF_13);
     }
     
     @Test
     public void testGetServerThatContainsIP() {
-        Server actual = sm.getServerThatContainsIP(IPv4Address.of("184.164.243.69"));
-        Assert.assertEquals(server, actual);
+        RandomizedHost actual = sm.getServerThatContainsIP(IPv4Address.of("184.164.243.69"));
+        Assert.assertEquals(randomizedHost, actual);
     }
     
 }

@@ -6,7 +6,7 @@ import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.MappingJsonFactory;
 import net.floodlightcontroller.randomizer.IRandomizerService;
 import net.floodlightcontroller.randomizer.IRandomizerService.RandomizerReturnCode;
-import net.floodlightcontroller.randomizer.Server;
+import net.floodlightcontroller.randomizer.RandomizedHost;
 import org.projectfloodlight.openflow.types.IPv4Address;
 import org.projectfloodlight.openflow.types.IPv4AddressWithMask;
 import org.restlet.resource.Get;
@@ -43,40 +43,40 @@ public class ServerResource extends org.restlet.resource.ServerResource {
 
         Map<String, String> ret = new HashMap<String, String>();
 
-        Server server = parseServerFromJson(json);
-        if (server == null) {
+        RandomizedHost randomizedHost = parseServerFromJson(json);
+        if (randomizedHost == null) {
             ret.put(Code.CODE, Code.ERR_JSON);
             ret.put(Code.MESSAGE, "Error: Could not parse JSON.");
         } else if (operation.equals(STR_OPERATION_ADD)) {
-            RandomizerReturnCode rc = randomizerService.addServer(server);
+            RandomizerReturnCode rc = randomizerService.addServer(randomizedHost);
             switch (rc) {
                 case SERVER_ADDED:
                     ret.put(Code.CODE, Code.OKAY);
-                    ret.put(Code.MESSAGE, "Server successfully added. It will be available for the next Randomizer session.");
+                    ret.put(Code.MESSAGE, "RandomizedHost successfully added. It will be available for the next Randomizer session.");
                     break;
                 case ERR_DUPLICATE_SERVER:
                     ret.put(Code.CODE, Code.ERR_DUPLICATE);
-                    ret.put(Code.MESSAGE, "Error: A duplicate server was detected. Unable to add server to Randomizer.");
+                    ret.put(Code.MESSAGE, "Error: A duplicate randomizedHost was detected. Unable to add randomizedHost to Randomizer.");
                     break;
                 default:
                     ret.put(Code.CODE, Code.ERR_BAD_ERR_CODE);
-                    ret.put(Code.MESSAGE, "Error: Unexpected error code " + rc.toString() + ". Server was not added.");
+                    ret.put(Code.MESSAGE, "Error: Unexpected error code " + rc.toString() + ". RandomizedHost was not added.");
                     break;
             }
         } else if (operation.equals(STR_OPERATION_REMOVE)) {
-            RandomizerReturnCode rc = randomizerService.removeServer(server);
+            RandomizerReturnCode rc = randomizerService.removeServer(randomizedHost);
             switch (rc) {
                 case SERVER_REMOVED:
                     ret.put(Code.CODE, Code.OKAY);
-                    ret.put(Code.MESSAGE, "Server successfully removed. It will be no longer be available for the next Randomizer session.");
+                    ret.put(Code.MESSAGE, "RandomizedHost successfully removed. It will be no longer be available for the next Randomizer session.");
                     break;
                 case ERR_UNKNOWN_SERVER:
                     ret.put(Code.CODE, Code.ERR_NOT_FOUND);
-                    ret.put(Code.MESSAGE, "Error: The server specified was not found. Unable to remove server from Randomizer.");
+                    ret.put(Code.MESSAGE, "Error: The randomizedHost specified was not found. Unable to remove randomizedHost from Randomizer.");
                     break;
                 default:
                     ret.put(Code.CODE, Code.ERR_BAD_ERR_CODE);
-                    ret.put(Code.MESSAGE, "Error: Unexpected error code " + rc.toString() + ". Server was not removed.");
+                    ret.put(Code.MESSAGE, "Error: Unexpected error code " + rc.toString() + ". RandomizedHost was not removed.");
                     break;
             }
         } else {
@@ -96,7 +96,7 @@ public class ServerResource extends org.restlet.resource.ServerResource {
      * @param json
      * @return
      */
-    private static Server parseServerFromJson(String json) {
+    private static RandomizedHost parseServerFromJson(String json) {
         MappingJsonFactory f = new MappingJsonFactory();
         JsonParser jp;
 
@@ -138,12 +138,12 @@ public class ServerResource extends org.restlet.resource.ServerResource {
                 } 
             }
         } catch (IOException e) {
-            log.error("Error parsing JSON into Server {}", e);
+            log.error("Error parsing JSON into RandomizedHost {}", e);
         }
 
         if (!ip.equals(IPv4Address.NONE)
                 && !prefix.equals(IPv4AddressWithMask.NONE)) {
-            return new Server(ip);
+            return new RandomizedHost(ip);
         } else {
             return null;
         }

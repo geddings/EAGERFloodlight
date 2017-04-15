@@ -17,30 +17,6 @@ public class Host {
         return address;
     }
 
-    public IPv4Address getAddressForMatch(Connection.Direction direction) {
-        return address;
-    }
-    
-    public IPv4Address getAddressForAction(Connection.Direction direction) {
-        return null;
-    }
-
-    @Override
-
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        Host host = (Host) o;
-
-        return address != null ? address.equals(host.address) : host.address == null;
-    }
-
-    @Override
-    public int hashCode() {
-        return address != null ? address.hashCode() : 0;
-    }
-
     @Override
     public String toString() {
         return "Host{" +

@@ -47,7 +47,7 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
     private static Logger log;
 
     private static List<Connection> connections;
-    private static ServerManager serverManager;
+    private static HostManager hostManager;
 
     private static boolean enabled;
     private static boolean randomize;
@@ -116,7 +116,7 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
         @Override
         public void execute(JobExecutionContext jobExecutionContext) throws JobExecutionException {
             log.debug("Updating IP addresses for each server. Flows will be updated as well.");
-            serverManager.updateServers();
+            hostManager.updateHosts();
             connections.forEach(Connection::update);
         }
     }
@@ -127,7 +127,7 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
         @Override
         public void execute(JobExecutionContext jobExecutionContext) throws JobExecutionException {
             log.debug("Updating prefixes for each server.");
-            serverManager.getServers().forEach(Server::updatePrefix);
+            hostManager.getHosts().forEach(RandomizedHost::updatePrefix);
         }
     }
 
@@ -164,7 +164,6 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
     @Override
     public RandomizerReturnCode setRandom(Boolean random) {
         randomize = random;
-        FlowFactory.setRandomize(randomize);
         log.warn("Set randomize to {}", random);
         return RandomizerReturnCode.CONFIG_SET;
     }
@@ -196,26 +195,26 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
     }
 
     @Override
-    public Server getServer(IPv4Address serveraddress) {
-        return serverManager.getServerFromRealIP(serveraddress);
+    public RandomizedHost getServer(IPv4Address serveraddress) {
+        return hostManager.getServerFromAddress(serveraddress);
     }
 
     @Override
-    public List<Server> getServers() {
-        return serverManager.getServers();
+    public List<RandomizedHost> getServers() {
+        return hostManager.getHosts();
     }
 
     @Override
-    public RandomizerReturnCode addServer(Server server) {
+    public RandomizerReturnCode addServer(RandomizedHost randomizedHost) {
         // Todo Make this portion more robust by adding more checks as needed
-        serverManager.addServer(server);
+        hostManager.addHost(randomizedHost);
         return RandomizerReturnCode.SERVER_ADDED;
     }
 
     @Override
-    public RandomizerReturnCode removeServer(Server server) {
+    public RandomizerReturnCode removeServer(RandomizedHost randomizedHost) {
         // Todo Make this portion more robust by adding more checks as needed
-        serverManager.removeServer(server);
+        hostManager.removeHost(randomizedHost);
         return RandomizerReturnCode.SERVER_REMOVED;
     }
 
@@ -238,28 +237,28 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
 
     @Override
     public Map<IPv4Address, IPv4AddressWithMask> getCurrentPrefix() {
-        return serverManager.getServers().stream()
-                .collect(Collectors.toMap(Server::getAddress, Server::getPrefix));
+        return hostManager.getHosts().stream()
+                .collect(Collectors.toMap(RandomizedHost::getAddress, RandomizedHost::getPrefix));
     }
 
     public Map<IPv4Address, List<IPv4AddressWithMask>> getPrefixes() {
-        return serverManager.getServers().stream()
-                .collect(Collectors.toMap(Server::getAddress, Server::getPrefixes));
+        return hostManager.getHosts().stream()
+                .collect(Collectors.toMap(RandomizedHost::getAddress, RandomizedHost::getPrefixes));
     }
 
     @Override
-    public void addPrefix(Server server, IPv4AddressWithMask prefix) {
-        if (!serverManager.getServerFromRealIP(server.getAddress()).getPrefixes().contains(prefix)) {
+    public void addPrefix(RandomizedHost randomizedHost, IPv4AddressWithMask prefix) {
+        if (!hostManager.getServerFromAddress(randomizedHost.getAddress()).getPrefixes().contains(prefix)) {
             // TODO: This can be simplified a ton.
-            serverManager.getServerFromRealIP(server.getAddress()).addPrefix(prefix);
+            hostManager.getServerFromAddress(randomizedHost.getAddress()).addPrefix(prefix);
         }
     }
 
     @Override
-    public void removePrefix(Server server, IPv4AddressWithMask prefix) {
-        if (serverManager.getServerFromRealIP(server.getAddress()).getPrefixes().contains(prefix)) {
+    public void removePrefix(RandomizedHost randomizedHost, IPv4AddressWithMask prefix) {
+        if (hostManager.getServerFromAddress(randomizedHost.getAddress()).getPrefixes().contains(prefix)) {
             // TODO: This can also be simplified a lot.
-            serverManager.getServerFromRealIP(server.getAddress()).removePrefix(prefix);
+            hostManager.getServerFromAddress(randomizedHost.getAddress()).removePrefix(prefix);
         }
     }
 
@@ -314,22 +313,22 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
 
     private Connection createConnectionFromPacket(Ethernet l2, IOFSwitch sw, OFPort inPort) {
         EthType ethType = l2.getEtherType();
-        Server source = null;
-        Server destination = null;
-        Connection.Direction direction = null;
+        Host source = null;
+        Host destination = null;
+        Direction direction = null;
 
         if (inPort != null) direction = inPort.equals(wanport)
-                ? Connection.Direction.INCOMING
-                : Connection.Direction.OUTGOING;
+                ? Direction.INCOMING
+                : Direction.OUTGOING;
 
         if (ethType == EthType.IPv4) {
             IPv4 l3 = (IPv4) l2.getPayload();
-            source = serverManager.getServer(l3.getSourceAddress());
-            destination = serverManager.getServer(l3.getDestinationAddress());
+            source = hostManager.getServer(l3.getSourceAddress());
+            destination = hostManager.getServer(l3.getDestinationAddress());
         } else if (l2.getEtherType() == EthType.ARP) {
             ARP arp = (ARP) l2.getPayload();
-            source = serverManager.getServer(arp.getSenderProtocolAddress());
-            destination = serverManager.getServer(arp.getTargetProtocolAddress());
+            source = hostManager.getServer(arp.getSenderProtocolAddress());
+            destination = hostManager.getServer(arp.getTargetProtocolAddress());
         }
 
         if (source == null || destination == null) {
@@ -402,14 +401,14 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
         ((ch.qos.logback.classic.Logger) LoggerFactory.getLogger(LinkDiscoveryManager.class)).setLevel(Level.ERROR);
 
         connections = new ArrayList<Connection>();
-        serverManager = new ServerManager();
+        hostManager = new HostManager();
 
         /* Add prefixes here */
         //prefixes.add(IPv4AddressWithMask.of("184.164.243.0/24"));
 
         /* Add servers here */
-        serverManager.addServer(new Server(IPv4Address.of(10, 0, 0, 1)));
-        serverManager.addServer(new Server(IPv4Address.of(20, 0, 0, 1)));
+        hostManager.addHost(new RandomizedHost(IPv4Address.of(10, 0, 0, 1)));
+        hostManager.addHost(new RandomizedHost(IPv4Address.of(20, 0, 0, 1)));
     }
 
     @Override
@@ -437,7 +436,6 @@ public class Randomizer implements IOFMessageListener, IOFSwitchListener, IFlood
                     new Object[]{enabled, randomize, lanport, wanport});
         }
 
-        FlowFactory.setRandomize(randomize);
         FlowFactory.setWanport(wanport);
         FlowFactory.setLanport(lanport);
 

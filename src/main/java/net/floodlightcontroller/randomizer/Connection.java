@@ -10,7 +10,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Created by geddingsbarrineau on 9/14/16.
- *
+ * <p>
  * This is a connection object for the EAGER project.
  */
 @JsonSerialize(using = ConnectionSerializer.class)
@@ -28,34 +28,32 @@ public class Connection {
         this.destination = destination;
         this.direction = direction;
         this.sw = sw;
-        
+
         flowFactory = new FlowFactory(this);
 
         IOFSwitch ofSwitch = Randomizer.switchService.getActiveSwitch(sw);
-        if (ofSwitch != null) {
-            for (OFFlowMod flow : flowFactory.getFlowAdds()) {
-                ofSwitch.write(flow);
-            }
+        for (OFFlowMod flow : flowFactory.getFlowAdds()) {
+            ofSwitch.write(flow);
         }
+
     }
 
     public void update() {
         IOFSwitch ofSwitch = Randomizer.switchService.getActiveSwitch(sw);
-        if (ofSwitch != null) {
-            for (OFFlowMod flow : flowFactory.getFlowAdds()) {
-                ofSwitch.write(flow);
-            }
+        for (OFFlowMod flow : flowFactory.getFlowAdds()) {
+            ofSwitch.write(flow);
         }
+
     }
 
     public Host getSource() {
         return source;
     }
-    
+
     public Host getDestination() {
         return destination;
     }
-    
+
     public Direction getDirection() {
 
         return direction;
@@ -88,7 +86,4 @@ public class Connection {
                 '}';
     }
 
-    public enum Direction {
-        INCOMING, OUTGOING
-    }
 }
